@@ -38,7 +38,7 @@ module registers(
     initial begin
         registers[0] = 32'h0000;
         registers[1] = 32'h0000;
-        registers[2] = 32'hffff;
+        registers[2] = 32'b0000_0000_0000_1111_1111_1111_1111_1111;
         registers[3] = 32'h0000;
         registers[4] = 32'h0000;
         registers[5] = 32'h0000;
