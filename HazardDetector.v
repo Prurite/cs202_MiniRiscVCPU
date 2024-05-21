@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
 
-module Hazard(
+module HazardDetector(
     input clk, rst,
     input [31:0] inst,
     output reg stall,

@@ -10,7 +10,7 @@ module IDBuffer (
   input [4:0] rd_i,
   output reg MemRead_o, MemtoReg_o, MemWrite_o,
   output reg ALUSrc_o, ALUOp_o,
-  output reg [31:0] ALUdata1, ALUdata2, imm32,
+  output reg [31:0] rs1Data_o, rs2Data_o, imm32,
   output reg [2:0] func3, reg [6:0] func7,
   output reg [4:0] rd_o
 );
@@ -31,20 +31,20 @@ module IDBuffer (
 
   always @(negedge clk) begin
     if (!neg_r)
-      ALUdata1 <= 32'b0;
+      rs1Data_o <= 32'b0;
     else if (fwd_ex_1)
-      ALUdata1 <= fwd_ex_data;
+      rs1Data_o <= fwd_ex_data;
     else if (fwd_mem_1)
-      ALUdata1 <= fwd_mem_data;
+      rs1Data_o <= fwd_mem_data;
     else
-      ALUdata1 <= rs1Data;
+      rs1Data_o <= rs1Data;
     if (!neg_r)
-      ALUdata2 <= 32'b0;
+      rs2Data_o <= 32'b0;
     else if (fwd_ex_2)
-      ALUdata2 <= fwd_ex_data;
+      rs2Data_o <= fwd_ex_data;
     else if (fwd_mem_2)
-      ALUdata2 <= fwd_mem_data;
+      rs2Data_o <= fwd_mem_data;
     else
-      ALUdata2 <= rs2Data;
+      rs2Data_o <= rs2Data;
   end
 endmodule
