@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
 
-module Mem (
+module MEM (
     input clk, rst,
     input MemRead,
     input MemWrite,
