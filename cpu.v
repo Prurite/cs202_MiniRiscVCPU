@@ -4,21 +4,24 @@ module cpu (
     input clk, rst
 );
 
-    reg[31:0] imm32_r3;
-    wire zero_ALU;
-    wire[31:0] inst_IFetch;
-    reg Branch_r3;
+    wire stall;
+    wire forwarding_EX_EX1;
+    wire forwarding_EX_EX2;
+    wire forwarding_MEM_EX1;
+    wire forwarding_MEM_EX2;
+    wire incorrect;
 
-    
+    wire[31:0] inst_IFetch;
+
+    wire[31:0] imm32_Decoder;
     IFetch ifetch(
         .clk(clk), .rst(rst),
-        .imm32(imm32_r3),
-        .branch(Branch_r3),
-        .zero(zero_ALU),
+        .stall(stall),
+        .incorrect(incorrect),
+        .imm32(imm32_Decoder),
         .inst(inst_IFetch)
     );
 
-    wire Branch_Controller;
     wire MemRead_Controller;
     wire MemtoReg_Controller;
     wire MemWrite_Controller;
@@ -30,7 +33,6 @@ module cpu (
 
     Controller controller(
         .inst(inst_IFetch),
-        .Branch(Branch_Controller),
         .MemRead(MemRead_Controller),
         .MemtoReg(MemtoReg_Controller),
         .MemWrite(MemWrite_Controller),
@@ -42,7 +44,7 @@ module cpu (
     wire[31:0] WriteData_Mem;//will be passed from mem
     wire[31:0] rs1Data_Decoder;
     wire[31:0] rs2Data_Decoder;
-    wire[31:0] imm32_Decoder;
+
 
     Decoder decoder (
         .clk(clk), .rst(rst),
@@ -51,10 +53,20 @@ module cpu (
         .writeData(WriteData_Mem),
         .rs1Data(rs1Data_Decoder),
         .rs2Data(rs2Data_Decoder),
-        .imm32(imm32_Decoder)
+        .imm32(imm32_Decoder),
+        .incorrect(incorrect)
     );
 
-    reg Branch_r2;
+    Hazard hazard (
+        .clk(clk), .rst(rst),
+        .inst(inst_IFetch),
+        .stall(stall),
+        .forwarding_EX_EX1(forwarding_EX_EX1),
+        .forwarding_EX_EX2(forwarding_EX_EX2),
+        .forwarding_MEM_EX1(forwarding_MEM_EX1),
+        .forwarding_MEM_EX2(forwarding_MEM_EX2)
+    );
+
     reg MemRead_r2;
     reg MemtoReg_r2;
     reg MemWrite_r2;
@@ -63,9 +75,12 @@ module cpu (
     reg [2:0] funct3_r2;
     reg [6:0] funct7_r2;
 
+    reg [32:0] imm32_r2;
+    reg [31:0] ReadData1;
+    reg [31:0] ReadData2;
+
     always @(posedge clk) begin
-        if (~rst) begin
-            Branch_r2 <= 1'b0;
+        if (~rst || stall) begin
             MemRead_r2 <= 1'b0;
             MemtoReg_r2 <= 1'b0;
             MemWrite_r2 <= 1'b0;
@@ -73,30 +88,40 @@ module cpu (
             ALUOp_r2 <= 2'b0;
             funct3_r2 <= 3'b0;
             funct7_r2 <= 7'b0;
+            imm32_r2 <= 32'b0;
+            ReadData1 <= 32'b0;
+            ReadData2 <= 32'b0;
         end
         else begin
-            Branch_r2 <= Branch_Controller;
             MemRead_r2 <= MemRead_Controller;
             MemtoReg_r2 <= MemtoReg_Controller;
             MemWrite_r2 <= MemWrite_Controller;
             ALUSrc_r2 <= ALUSrc_Contorller;
             ALUOp_r2 <= ALUOp_Controller;
+            imm32_r2 <= imm32_Decoder;
             funct3_r2 <= inst_IFetch[14:12];
             funct7_r2 <= inst_IFetch[31:25];
+
+            if (forwarding_EX_EX1) ReadData1 <= ALUResult_ALU;
+            else if (forwarding_MEM_EX1) ReadData1 <= WriteData_Mem;
+            else ReadData1 <= rs1Data_Decoder;
+
+            if (forwarding_EX_EX2) ReadData2 <= ALUResult_ALU;
+            else if (forwarding_MEM_EX2) ReadData2 <= WriteData_Mem;
+            else ReadData2 <= rs2Data_Decoder;
         end
     end
 
     wire [31:0] ALUResult_ALU;
 
     ALU alu (
-        .ReadData1(rs1Data_Decoder),
-        .ReadData2(rs2Data_Decoder),
-        .imm32(imm32_Decoder),
+        .ReadData1(ReadData1),
+        .ReadData2(ReadData2),
+        .imm32(imm32_r2),
         .ALUOp(ALUOp_r2),
         .funct3(funct3_r2),
         .funct7(funct7_r2),
-        .ALUSrc(ALUSrc_r2),
-        .zero(zero_ALU)
+        .ALUSrc(ALUSrc_r2)
     );
 
     reg MemRead_r3;
@@ -107,20 +132,16 @@ module cpu (
 
     always @(posedge clk) begin
         if (~rst) begin
-            Branch_r3 <= 1'b0;
             MemRead_r3 <= 1'b0;
             MemtoReg_r3 <= 1'b0;
             MemWrite_r3 <= 1'b0;
-            imm32_r3 <= 32'b0;
             DataIn_r3 <= 32'b0;
         end
         else begin
-            Branch_r3 <= Branch_r2;
             MemRead_r3 <= MemRead_r2;
             MemtoReg_r3 <= MemtoReg_r2;
             MemWrite_r3 <= MemWrite_r2;
-            imm32_r3 <= imm32_Decoder;
-            DataIn_r3 <= rs2Data_Decoder;
+            DataIn_r3 <= ReadData2;
         end
 
     end

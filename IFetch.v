@@ -2,18 +2,23 @@
 
 module IFetch (
     input clk, rst,
+    input stall,
+    input incorrect,
     input [31:0] imm32,
-    input branch, zero,
     output [31:0] inst
 );
+    wire[31:0] inst_mem;
     reg [31:0] pc;
     always @(negedge clk) begin
         if (!rst)
             pc <= 32'b0;
-        else if (branch && zero)
-            pc <= pc + imm32;
-        else
+        else if (!incorrect)
             pc <= pc + 4;
+        else
+            pc <= pc - 4 + imm32;
     end
-    prgrom urom(.clka(clk), .addra(pc[31:2]), .douta(inst));
+
+    assign inst = stall ? 32'b0 : inst_mem;
+
+    prgrom urom(.clka(clk), .addra(pc[31:2]), .douta(inst_mem));
 endmodule

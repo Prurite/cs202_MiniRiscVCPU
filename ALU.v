@@ -6,8 +6,7 @@ module ALU (
     input [2:0] funct3,
     input [6:0] funct7,
     input ALUSrc,
-    output reg [31:0] ALUResult,
-    output zero
+    output reg [31:0] ALUResult
 );
     wire [31:0] A, B;
     assign A = ReadData1;
@@ -27,5 +26,4 @@ module ALU (
                 endcase
         endcase
     end
-    assign zero = (ALUResult == 0);
 endmodule
