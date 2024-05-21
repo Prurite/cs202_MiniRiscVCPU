@@ -6,7 +6,8 @@ module Decoder(
     input [31:0] inst,
     input [31:0] writeData,
     output [31:0] rs1Data, rs2Data,
-    output reg [31:0] imm32 
+    output reg [31:0] imm32,
+    output correct
 );
     reg [31:0] r[31:0];
     wire [4:0] rs1, rs2, rd;
@@ -41,4 +42,13 @@ module Decoder(
             default:
                 imm32 <= 32'b0;
         endcase
+
+    assign correct = (inst[6:0] == 7'b1100011) && (
+    (inst[14:12] == 3'h0 && rs1Data == rs2Data) ||  // beq
+    (inst[14:12] == 3'h1 && rs1Data != rs2Data) ||  // bne
+    (inst[14:12] == 3'h4 && $signed(rs1Data - rs2Data) < 0) ||  // blt
+    (inst[14:12] == 3'h5 && $signed(rs1Data - rs2Data) >= 0) ||  // bge
+    (inst[14:12] == 3'h6 && rs1Data < rs2Data) ||  // bltu
+    (inst[14:12] == 3'h7 && rs1Data >= rs2Data)  // bgeu
+    );
 endmodule
