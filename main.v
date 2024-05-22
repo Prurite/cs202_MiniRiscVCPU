@@ -42,7 +42,6 @@ module main (
     );
 
     Controller uController(
-        .clk(clk), .rst(rst),
         .inst(inst_if_o),
         .MemRead(MemRead_if_o),
         .MemtoReg(MemtoReg_if_o),
@@ -57,7 +56,7 @@ module main (
         .MemRead_i(MemRead_if_o), .MemtoReg_i(MemtoReg_if_o), .MemWrite_i(MemWrite_if_o),
         .ALUSrc_i(ALUSrc_if_o), .RegWrite_i(RegWrite_if_o), .ALUOp_i(ALUOp_if_o),
         .inst_i(inst_if_o), .rd_i(rd_mem_i), .WriteData_i(MemData_mem_o),
-        .Memread_o(Memread_id_i), .MemtoReg_o(MemtoReg_id_i), .MemWrite_o(MemWrite_id_i),
+        .MemRead_o(Memread_id_i), .MemtoReg_o(MemtoReg_id_i), .MemWrite_o(MemWrite_id_i),
         .ALUSrc_o(ALUSrc_id_i), .RegWrite_o(RegWrite_id_i), .ALUOp_o(ALUOp_id_i),
         .inst_o(inst_id_i), .rd_o(rd_id_i), .WriteData_o(WriteData_id_i)
     );
@@ -100,10 +99,10 @@ module main (
 
     ALU uALU(
         .ALUOp(ALUOp_ex_i),
-        .ALUdata1(rs1Data_ex_i), .ALUdata2(rs2Data_ex_i),
-        .imm32(imm32_ex_i), .func3(func3_ex_i), .func7(func7_ex_i),
-        .ALUsrc(ALUSrc_ex_i),
-        .ALUresult(ALUResult_ex_o)
+        .ReadData1(rs1Data_ex_i), .ReadData2(rs2Data_ex_i),
+        .imm32(imm32_ex_i), .funct3(func3_ex_i), .funct7(func7_ex_i),
+        .ALUSrc(ALUSrc_ex_i),
+        .ALUResult(ALUResult_ex_o)
     );
 
     EXBuffer uEXBuffer(
