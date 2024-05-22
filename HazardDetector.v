@@ -34,15 +34,9 @@ always @(negedge clk) begin
     if (~rst) begin
         preInst1 <= 32'b0;
         preInst2 <= 32'b0;
-        forwarding_MEM_EX1_pre <= 1'b0;
-        forwarding_MEM_EX2_pre <= 1'b0;
-        lock1 <= 1'b1;
-        lock2 <= 1'b1;
     end else begin
         preInst1 <= inst;
         preInst2 <= preInst1;
-        forwarding_MEM_EX1 <= lock1 ? forwarding_MEM_EX1 : forwarding_MEM_EX1_pre;
-        forwarding_MEM_EX2 <= lock2 ? forwarding_MEM_EX2 : forwarding_MEM_EX2_pre;
     end
 end
 
@@ -53,13 +47,17 @@ always @(posedge clk) begin
         forwarding_MEM_EX1 <= 1'b0;
         forwarding_EX_EX2 <= 1'b0;
         forwarding_MEM_EX2 <= 1'b0;
+        forwarding_MEM_EX1_pre <= 1'b0;
+        forwarding_MEM_EX2_pre <= 1'b0;
+        lock1 <= 1'b1;
+        lock2 <= 1'b1;
     end else begin
         // initialization
         stall <= 1'b0;
         forwarding_EX_EX1 <= 1'b0;
-        forwarding_MEM_EX1 <= 1'b0;
+        forwarding_MEM_EX1 <= lock1 ? forwarding_MEM_EX1 : forwarding_MEM_EX1_pre;
         forwarding_EX_EX2 <= 1'b0;
-        forwarding_MEM_EX2 <= 1'b0;
+        forwarding_MEM_EX2 <= lock2 ? forwarding_MEM_EX2 : forwarding_MEM_EX2_pre;
 
         // if the present inst have src
         if (opcode != JAL && opcode != JALR && opcode != LUI && opcode != AUIPC && opcode != ECALL) begin

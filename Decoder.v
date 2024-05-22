@@ -20,9 +20,11 @@ module Decoder(
     assign rs2 = inst[24:20];
 
     always @(posedge clk)
-        if (!rst)
-            for (i = 0; i < 32; i = i + 1)
-                r[i] <= 32'b0;
+        if (!rst) begin
+            for (i = 0; i < 2; i = i + 1) r[i] <= 32'b0;
+            r[2] <= 32'd65536;
+            for (i = 3; i < 32; i = i + 1) r[i] <= 32'b0;
+        end
         else
             r[rd_i] <= regWrite && rd_i ? writeData : r[rd_i];
 
