@@ -11,7 +11,8 @@ module IDBuffer (
   output reg MemRead_o, MemtoReg_o, MemWrite_o,
   output reg ALUSrc_o, ALUOp_o,
   output reg [31:0] rs1Data_o, rs2Data_o, imm32,
-  output reg [2:0] func3, reg [6:0] func7,
+  output reg [2:0] func3,
+  output reg [6:0] func7,
   output reg [4:0] rd_o
 );
   wire r;

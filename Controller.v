@@ -5,7 +5,7 @@
 
 module Controller (
     input [31:0] inst,
-    output Branch, MemRead, MemtoReg, MemWrite, ALUSrc, RegWrite,
+    output MemRead, MemtoReg, MemWrite, ALUSrc, RegWrite,
     output reg [1:0] ALUOp
 );
     wire [6:0] i;

@@ -13,8 +13,8 @@ module EXBuffer(
     MemRead_o <= rst ? MemRead_i : 1'b0;
     MemtoReg_o <= rst ? MemtoReg_i : 1'b0;
     MemWrite_o <= rst ? MemWrite_i : 1'b0;
-    ALUResult_o <= rst ? 32'b0 : ALUResult_i;
-    MemData_o <= rst ? 32'b0 : MemData_i;
+    ALUResult_o <= rst ? ALUResult_i : 32'b0;
+    MemData_o <= rst ? MemData_i : 32'b0;
     rd_o <= rst ? rd_i : 5'b0;
   end
 endmodule 
