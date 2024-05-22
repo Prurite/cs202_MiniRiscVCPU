@@ -10,7 +10,6 @@ module Controller (
 );
     wire [6:0] i;
     assign i = inst[6:0];
-    assign Branch = (i == 7'b1100011);
     assign MemRead = (i == 7'b0000011);
     assign MemtoReg = (i == 7'b0000011);
     assign MemWrite = (i == 7'b0100011);

@@ -10,6 +10,10 @@ module HazardDetector(
     output reg forwarding_MEM_EX2
 );
 
+    reg forwarding_MEM_EX1_pre;
+    reg forwarding_MEM_EX2_pre;
+    reg lock1, lock2;
+
 // define parameter
 localparam JAL   = 7'b1101111;
 localparam JALR  = 7'b1100111;
@@ -30,9 +34,15 @@ always @(negedge clk) begin
     if (~rst) begin
         preInst1 <= 32'b0;
         preInst2 <= 32'b0;
+        forwarding_MEM_EX1_pre <= 1'b0;
+        forwarding_MEM_EX2_pre <= 1'b0;
+        lock1 <= 1'b1;
+        lock2 <= 1'b1;
     end else begin
         preInst1 <= inst;
         preInst2 <= preInst1;
+        forwarding_MEM_EX1 <= lock1 ? forwarding_MEM_EX1 : forwarding_MEM_EX1_pre;
+        forwarding_MEM_EX2 <= lock2 ? forwarding_MEM_EX2 : forwarding_MEM_EX2_pre;
     end
 end
 
@@ -64,10 +74,10 @@ end
 task check_hazards(input [31:0] preInst, input [6:0] preOpcode, input integer stage);
     begin
         if ((preOpcode == LOAD) || (preOpcode == RTYPE) || (preOpcode == ILOAD)) begin // preOpcode have dest register
-            if (inst[19:15] == preInst[11:7]) begin // SRC1 have hazard
+            if (inst[19:15] == preInst[11:7] && (inst[19:15] != 5'b0)) begin // SRC1 have hazard
                 assign_forwarding(stage, preOpcode == LOAD, 1);
             end
-            if ((opcode != ITYPE) && (inst[24:20] == preInst[11:7])) begin // inst now have 2 src registers and the second one has hazard
+            if ((opcode != ITYPE) && (inst[24:20] == preInst[11:7]) && (inst[24:20] != 5'b0)) begin // inst now have 2 src registers and the second one has hazard
                 assign_forwarding(stage, preOpcode == LOAD, 2);
             end
         end
@@ -75,16 +85,20 @@ task check_hazards(input [31:0] preInst, input [6:0] preOpcode, input integer st
 endtask
 
 // assign forwarding and stall
+//have some problem in logic
 task assign_forwarding(input integer stage, input is_load, input integer src);
     begin
+        stall <= is_load && stage == 1;
         if (src == 1) begin
-            stall <= is_load && stage == 1;
-            forwarding_MEM_EX1 <= is_load && stage == 1;
             forwarding_EX_EX1 <= !is_load && stage == 1;
+            forwarding_MEM_EX1_pre <= is_load && stage == 1;
+            lock1 <= is_load && stage == 1 ? 1'b0 : 1'b1;
+            forwarding_MEM_EX1 <= stage == 2;
         end else begin
-            stall <= is_load && stage == 1;
-            forwarding_MEM_EX2 <= is_load && stage == 1;
             forwarding_EX_EX2 <= !is_load && stage == 1;
+            forwarding_MEM_EX2_pre <= is_load && stage == 1;
+            lock2 <= is_load && stage == 1 ? 1'b0 : 1'b1;
+            forwarding_MEM_EX2 <= stage == 2;
         end
     end
 endtask
