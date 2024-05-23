@@ -21,13 +21,15 @@ module ALU (
                     ALUResult <= A + B;
                 2'b01: // branch
                     ALUResult <= A - B;
-                2'b10: // register arithmatic: add, sub, and, or, addi, andi, ori
+                2'b10: // register arithmatic: add, sub, and, or
                     case(funct3)
                         3'h0: ALUResult <= ((funct7 == 7'h00) ? A + B : A - B); // add, sub
                         3'h7: ALUResult <= A & B; // and
                         3'h6: ALUResult <= A | B; // or
                         default: ALUResult <= 0;
                     endcase
+                2'b11: // register with immediate: addi, ori, andi
+                    // TODO
             endcase
         end
     end

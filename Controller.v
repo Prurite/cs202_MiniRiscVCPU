@@ -22,8 +22,8 @@ module Controller (
             7'b0100011: ALUOp = 2'b00; // store
             7'b1100011: ALUOp = 2'b01; // branch
             7'b0110011: ALUOp = 2'b10; // R-type
-            7'b0010011: ALUOp = 2'b10; // I-type (with reg)
-            default: ALUOp = 2'b11;
+            7'b0010011: ALUOp = 2'b11; // I-type (with reg)
+            default: ALUOp = 2'b00;
         endcase
     end
 endmodule
