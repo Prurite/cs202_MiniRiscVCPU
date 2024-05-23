@@ -12,7 +12,7 @@ module IFetch (
         if (!rst)
             pc <= 32'b0;
         else if (stall)
-            pc <= pc - 4;
+            pc <= pc;
         else if (doBranch)
             pc <= pc - 4 + imm32;
         else

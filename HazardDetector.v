@@ -35,7 +35,7 @@ always @(negedge clk) begin
         preInst1 <= 32'b0;
         preInst2 <= 32'b0;
     end else begin
-        preInst1 <= inst;
+        preInst1 <= lock1 && lock2 ? inst : 32'h00000013;
         preInst2 <= preInst1;
     end
 end

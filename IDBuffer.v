@@ -17,7 +17,6 @@ module IDBuffer (
   output reg [6:0] func7,
   output reg [4:0] rd_o
 );
-  wire r;
   assign neg_r = rst && !clear;
 
   always @(negedge clk) begin
