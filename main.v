@@ -25,6 +25,7 @@ module main (
     wire [4:0] rd_ex_i;
 
     wire [31:0] ALUResult_ex_o;
+    wire doBranch_ex_o;
 
     wire MemRead_mem_i, MemtoReg_mem_i, MemWrite_mem_i, RegWrite_mem_i;
     wire [31:0] ALUResult_mem_i, MemData_mem_i;
@@ -33,12 +34,11 @@ module main (
     wire [31:0] MemData_mem_o;
 
     wire stall;
-    wire doBranch;
 
     IFetch uIFetch(
         .clk(clk), .rst(rst), .stall(stall),
-        .doBranch(doBranch), // may have mistake when the clock is too fast
-        .imm32(imm32_id_o), //db and imm are prepared at pos and used at neg
+        .doBranch(doBranch_ex_o), // may have mistake when the clock is too fast
+        .imm32(imm32_ex_i), //db and imm are prepared at pos and used at neg
         .inst(inst_if_o)
     );
 
@@ -53,7 +53,7 @@ module main (
     );
 
     IFBuffer uIFBuffer(
-        .clk(clk), .rst(rst), .stall(stall), .clear(doBranch),
+        .clk(clk), .rst(rst), .stall(stall), .clear(doBranch_ex_o),
         .MemRead_i(MemRead_if_o), .MemtoReg_i(MemtoReg_if_o), .MemWrite_i(MemWrite_if_o),
         .ALUSrc_i(ALUSrc_if_o), .RegWrite1_i(RegWrite_if_o), .RegWrite2_i(RegWrite_mem_i), .ALUOp_i(ALUOp_if_o),
         .inst_i(inst_if_o), .rd_i(rd_mem_i), .WriteData_i(MemData_mem_o),
@@ -70,12 +70,11 @@ module main (
         .writeData(WriteData_id_i),
         .rs1Data(rs1Data_id_o), .rs2Data(rs2Data_id_o),
         .rd_o(rd_id_o),
-        .imm32(imm32_id_o),
-        .doBranch(doBranch)
+        .imm32(imm32_id_o)
     );
 
     HazardDetector uHazardDetector(
-        .clk(clk), .rst(rst),
+        .clk(clk), .rst(rst && ~doBranch_ex_o),
         .inst(inst_id_i),
         .stall(stall),
         .forwarding_EX_EX1(fwd_ex_1_id_o), .forwarding_EX_EX2(fwd_ex_2_id_o),
@@ -83,7 +82,7 @@ module main (
     );
 
     IDBuffer uIDBuffer(
-        .clk(clk), .rst(rst), .clear(stall),
+        .clk(clk), .rst(rst), .clear(stall || doBranch_ex_o),
         .fwd_ex_1(fwd_ex_1_id_o), .fwd_mem_1(fwd_mem_1_id_o),
         .fwd_ex_2(fwd_ex_2_id_o), .fwd_mem_2(fwd_mem_2_id_o),
         .fwd_ex_data(ALUResult_ex_o), .fwd_mem_data(MemData_mem_o),
@@ -104,7 +103,7 @@ module main (
         .ReadData1(rs1Data_ex_i), .ReadData2(rs2Data_ex_i),
         .imm32(imm32_ex_i), .funct3(func3_ex_i), .funct7(func7_ex_i),
         .ALUSrc(ALUSrc_ex_i),
-        .ALUResult(ALUResult_ex_o)
+        .ALUResult(ALUResult_ex_o), .doBranch(doBranch_ex_o)
     );
 
     EXBuffer uEXBuffer(

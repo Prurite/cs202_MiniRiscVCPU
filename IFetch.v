@@ -14,7 +14,7 @@ module IFetch (
         else if (stall)
             pc <= pc;
         else if (doBranch)
-            pc <= pc - 4 + imm32;
+            pc <= pc - 8 + imm32;
         else
             pc <= pc + 4;
     end

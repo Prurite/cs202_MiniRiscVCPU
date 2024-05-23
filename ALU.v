@@ -7,7 +7,8 @@ module ALU (
     input [2:0] funct3,
     input [6:0] funct7,
     input ALUSrc,
-    output reg [31:0] ALUResult
+    output reg [31:0] ALUResult,
+    output doBranch
 );
     wire [31:0] A, B;
     assign A = ReadData1;
@@ -30,4 +31,15 @@ module ALU (
             endcase
         end
     end
+
+
+
+    assign doBranch = (ALUOp == 2'b01) && (
+        (funct3 == 3'h0 && ReadData1 == ReadData2) ||  // beq
+        (funct3 == 3'h1 && ReadData1 != ReadData2) ||  // bne
+        (funct3 == 3'h4 && $signed(ReadData1 - ReadData2) < 0) ||  // blt
+        (funct3 == 3'h5 && $signed(ReadData1 - ReadData2) >= 0) ||  // bge
+        (funct3 == 3'h6 && ReadData1 < ReadData2) ||  // bltu
+        (funct3 == 3'h7 && ReadData1 >= ReadData2)  // bgeu
+    );
 endmodule
