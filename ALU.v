@@ -39,7 +39,7 @@ module ALU (
 
     assign jmp = ALUOp == 4'd5;
 
-    assign doBranch = jmp || (ALUOp == 4'd3 || ALUOp == 4'd4) && (
+    assign doBranch = jmp || ALUOp == 4'd4 || (ALUOp == 4'd3) && (
         (funct3 == 3'h0 && ReadData1 == ReadData2) ||  // beq
         (funct3 == 3'h1 && ReadData1 != ReadData2) ||  // bne
         (funct3 == 3'h4 && $signed(ReadData1 - ReadData2) < 0) ||  // blt

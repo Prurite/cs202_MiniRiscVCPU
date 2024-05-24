@@ -10,7 +10,7 @@ module MEM (
     output [31:0] DataOut
 );
     wire [31:0] data;
-    data_mem uram(.clka(clk), .addra(ALUResult), .dina(DataIn), .wea(MemWrite), .douta(data));
+    data_mem uram(.clka(clk), .addra(ALUResult[31:2]), .dina(DataIn), .wea(MemWrite), .douta(data));
 
     wire [31:0] data_mem = (~rst || ~MemRead) ? 32'b0 : data;
     assign DataOut = rst ? (MemtoReg ? data_mem : ALUResult) : 0;
