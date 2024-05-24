@@ -31,16 +31,18 @@ module Decoder(
     assign rs2Data = r[rs2];
 
     always @(posedge clk)
-        casex(inst[6:0])
-            7'b00x0011: // I-type
+        casez(inst[6:0])
+            7'b00?0011: // I-type
+                imm32 <= {{20{inst[31]}}, inst[31:20]};
+            7'b1100111: // jalr
                 imm32 <= {{20{inst[31]}}, inst[31:20]};
             7'b0100011: // S-type
                 imm32 <= {{20{inst[31]}}, inst[31:25], inst[11:7]};
-            7'b1100011: // SB-type
+            7'b1100011: // B-type
                 imm32 <= {{19{inst[31]}}, inst[31], inst[7], inst[30:25], inst[11:8], 1'b0};
-            7'b0x10111: // U-type
+            7'b0?10111: // U-type
                 imm32 <= {inst[31:12], 12'b0};
-            7'b1101111: // UJ-type
+            7'b1101111: // J-type
                 imm32 <= {{12{inst[31]}}, inst[31], inst[19:12], inst[20], inst[30:21], 1'b0};
             default:
                 imm32 <= 32'b0;

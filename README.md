@@ -21,7 +21,7 @@ Component Name: prgrom
 * Load Init File: Load your instruction coe file.
 
 ### Data Memory
-Component Name: prgrom
+Component Name: data_mem
 #### **Basic**
 * Memory type: Single Port RAM
 #### **Port A Options**
@@ -33,3 +33,19 @@ Component Name: prgrom
 * Primitives Output Register:<font color = red> No</font>
 #### **Other Options**
 * Load Init File: No
+
+## Signals
+
+### ALUSrc
+
+ALUSrc[0]: Controls input data 1 of ALU, 0 reg, 1 pc
+ALUSrc[1]: Controls input data 2 of ALU, 0 reg, 1 imm32
+
+### ALUOp
+
+0: Register and register
+1: Register and immediate
+2: Load and store
+3: Branch
+4: Jump (rd = PC + 4)
+5: Load immediate (rd = imm)

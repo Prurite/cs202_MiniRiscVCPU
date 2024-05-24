@@ -3,14 +3,16 @@
 module IFetch (
     input clk, rst,
     input stall,
-    input doBranch,
-    input [31:0] imm32,
+    input jmp, doBranch,
+    input [31:0] imm32, rs1,
+    output reg [31:0] pc,
     output [31:0] inst
 );
-    reg [31:0] pc;
     always @(negedge clk) begin
         if (!rst)
             pc <= 32'b0;
+        else if (jmp)
+            pc <= rs1 + imm32;
         else if (stall)
             pc <= pc;
         else if (doBranch)

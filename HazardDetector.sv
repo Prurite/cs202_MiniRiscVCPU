@@ -10,19 +10,15 @@ module HazardDetector(
 	output reg forwarding_MEM_EX2
 );
     // define parameter
-    localparam JAL   = 7'b1101111;
-    localparam JALR  = 7'b1100111;
-    localparam LUI   = 7'b0110111;
-    localparam AUIPC = 7'b0010111;
-    localparam ECALL = 7'b1110011;
+    localparam J     = 7'b110x111;
+    localparam U     = 7'b0x10111;
     localparam LOAD  = 7'b0000011;
-    localparam RTYPE = 7'b0110011;
-    localparam ILOAD = 7'b0010011; // Immediate with reg
-    localparam ITYPE = 7'b00x0011; 
+    localparam R     = 7'b0110011;
+    localparam I     = 7'b00x0011; 
+    localparam ECALL = 7'b1110011;
 
     reg [31:0] preInst1, preInst2;
 
-`define opcode inst[6:0]
 `define pre1op preInst1[6:0]
 `define pre2op preInst2[6:0]
 `define rs1 inst[19:15]
@@ -47,6 +43,9 @@ EX-EX: 连续两条指令，pre1 不是 lw 的 rd 是 cur 的 rs1 / rs2
 MEM-EX：pre2 指令的 rd 是 cur 的 rs1 / rs2
 */
 
+	wire pre1 = `pre1op == R || `pre1op ==? I || `pre1op ==? J || `pre1op ==? U;
+	wire pre2 = `pre2op == LOAD || `pre2op == R || `pre2op ==? I || `pre2op ==? J || `pre2op ==? U;
+
 	always @(posedge clk) begin
 		if (~rst) begin
 			stall <= 1'b0;
@@ -56,10 +55,10 @@ MEM-EX：pre2 指令的 rd 是 cur 的 rs1 / rs2
 			forwarding_MEM_EX2 <= 1'b0;
 		end else begin
 			stall <= `pre1op == LOAD && (`pre1rd == `rs1 || `pre1rd == `rs2);
-			forwarding_EX_EX1 <= (`pre1op == RTYPE || `pre1op == ILOAD) && (`pre1rd == `rs1);
-			forwarding_MEM_EX1 <= (`pre2op == LOAD || `pre1op == RTYPE || `pre1op == ILOAD) && (`pre2rd == `rs1);
-			forwarding_EX_EX2 <= (`pre1op == RTYPE || `pre1op == ILOAD) && (`pre1rd == `rs2);
-			forwarding_MEM_EX2 <= (`pre2op == LOAD || `pre1op == RTYPE || `pre1op == ILOAD) && (`pre2rd == `rs2);
+			forwarding_EX_EX1 <= pre1 && (`pre1rd == `rs1);
+			forwarding_MEM_EX1 <= pre2 && (`pre2rd == `rs1);
+			forwarding_EX_EX2 <= pre1 && (`pre1rd == `rs2);
+			forwarding_MEM_EX2 <= pre2 && (`pre2rd == `rs2);
 		end
 	end
 
