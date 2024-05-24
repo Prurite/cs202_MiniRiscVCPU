@@ -24,12 +24,23 @@ module ALU (
                 2'b10: // register arithmatic: add, sub, and, or
                     case(funct3)
                         3'h0: ALUResult <= ((funct7 == 7'h00) ? A + B : A - B); // add, sub
-                        3'h7: ALUResult <= A & B; // and
+                        3'h4: ALUResult <= A ^ B; //xor
                         3'h6: ALUResult <= A | B; // or
+                        3'h7: ALUResult <= A & B; // and
+                        3'h1: ALUResult <= A << B[4:0]; // sll
+                        3'h5: ALUResult <= ((funct7 == 7'h20) ? A >>> B[4:0] : A >> B[4:0]); //srl, sra
                         default: ALUResult <= 0;
                     endcase
                 2'b11: // register with immediate: addi, ori, andi
-                    // TODO
+                    case(funct3)
+                        3'h0: ALUResult <= A + imm32; // addi
+                        3'h4: ALUResult <= A ^ imm32; // xori
+                        3'h6: ALUResult <= A | imm32; // ori
+                        3'h7: ALUResult <= A & imm32; // andi
+                        3'h1: ALUResult <= A << imm32[4:0]; // sll
+                        3'h5: ALUResult <= ((imm32[11:5] == 7'h20) ? A >>> imm32[4:0] : A >> imm32[4:0]); //srli, srai
+                        default: ALUResult <= 0;
+                    endcase
             endcase
         end
     end

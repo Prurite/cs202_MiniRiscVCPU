@@ -24,7 +24,7 @@ module sim_1;
 
   // Stimulus
   always begin
-    repeat(100) #10 clk = ~clk;
+    repeat(500) #5 clk = ~clk;
     #10 $finish;
 
   end
