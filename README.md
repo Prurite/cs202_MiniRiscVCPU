@@ -47,5 +47,6 @@ ALUSrc[1]: Controls input data 2 of ALU, 0 reg, 1 imm32
 1: Register and immediate
 2: Load and store
 3: Branch
-4: Jump (rd = PC + 4)
-5: Load immediate (rd = imm)
+4: jal (rd = PC + 4, pc += imm)
+5: jalr (rd = PC + 4, pc = rs1 + imm)
+6: Load immediate (rd = imm)

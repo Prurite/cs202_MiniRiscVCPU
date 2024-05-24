@@ -29,15 +29,17 @@ module ALU (
             4'd4:
                 ALUResult = A + 4;
             4'd5:
+                ALUResult = A + 4;
+            4'd6:
                 ALUResult = B;
             default:
                 ALUResult = 32'b0;
         endcase
     end
 
-    assign jmp = ALUOp == 4'd4;
+    assign jmp = ALUOp == 4'd5;
 
-    assign doBranch = jmp || (ALUOp == 4'd3) && (
+    assign doBranch = jmp || (ALUOp == 4'd3 || ALUOp == 4'd4) && (
         (funct3 == 3'h0 && ReadData1 == ReadData2) ||  // beq
         (funct3 == 3'h1 && ReadData1 != ReadData2) ||  // bne
         (funct3 == 3'h4 && $signed(ReadData1 - ReadData2) < 0) ||  // blt
