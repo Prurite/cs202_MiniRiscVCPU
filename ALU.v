@@ -3,7 +3,7 @@
 module ALU (
     input clk, rst,
     input [31:0] ReadData1, ReadData2, imm32,
-    input [1:0] ALUOp,
+    input [2:0] ALUOp,
     input [2:0] funct3,
     input [6:0] funct7,
     input ALUSrc,
@@ -17,13 +17,13 @@ module ALU (
         if (~rst) ALUResult <= 32'b0;
         else begin
             casex(ALUOp)
-                2'b00: // load/store
+                3'b000: // load/store
                     ALUResult <= A + B;
-                2'b01: // branch
+                3'b001: // branch
                     ALUResult <= A - B;
-                2'b1x: // register arithmatic: add, sub, and, or
+                3'b01x: // register arithmatic: add, sub, and, or
                     case(funct3)
-                        3'h0: ALUResult <= ((ALUOp == 2'b10 && funct7 == 7'h00) ? A + B : A - B); // add, sub
+                        3'h0: ALUResult <= ((ALUOp == 3'b010 && funct7 == 7'h20) ? A - B : A + B); // add, sub
                         3'h4: ALUResult <= A ^ B; // xor
                         3'h6: ALUResult <= A | B; // or
                         3'h7: ALUResult <= A & B; // and
@@ -37,7 +37,7 @@ module ALU (
 
 
 
-    assign doBranch = (ALUOp == 2'b01) && (
+    assign doBranch = (ALUOp == 3'b001) && (
         (funct3 == 3'h0 && ReadData1 == ReadData2) ||  // beq
         (funct3 == 3'h1 && ReadData1 != ReadData2) ||  // bne
         (funct3 == 3'h4 && $signed(ReadData1 - ReadData2) < 0) ||  // blt
