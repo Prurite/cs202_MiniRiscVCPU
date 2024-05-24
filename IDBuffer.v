@@ -6,12 +6,12 @@ module IDBuffer (
   input [31:0] fwd_ex_data, fwd_mem_data,
   input MemRead_i, MemtoReg_i, MemWrite_i, RegWrite_i,
   input ALUSrc_i,
-  input [2:0] ALUOp_i,
+  input [3:0] ALUOp_i,
   input [31:0] rs1Data, rs2Data, imm32_i, instr,
   input [4:0] rd_i,
   output reg MemRead_o, MemtoReg_o, MemWrite_o, RegWrite_o,
   output reg ALUSrc_o,
-  output reg [2:0] ALUOp_o,
+  output reg [3:0] ALUOp_o,
   output reg [31:0] rs1Data_o, rs2Data_o, imm32,
   output reg [2:0] func3,
   output reg [6:0] func7,
@@ -25,7 +25,7 @@ module IDBuffer (
     MemWrite_o <= neg_r ? MemWrite_i : 1'b0;
     RegWrite_o <= neg_r ? RegWrite_i : 1'b0;
     ALUSrc_o <= neg_r ? ALUSrc_i : 1'b0;
-    ALUOp_o <= neg_r ? ALUOp_i : 3'b0;
+    ALUOp_o <= neg_r ? ALUOp_i : 4'b0;
     imm32 <= neg_r ? imm32_i : 32'b0;
     func3 <= neg_r ? instr[14:12] : 3'b0;
     func7 <= neg_r ? instr[31:25] : 7'b0;

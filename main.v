@@ -6,10 +6,10 @@ module main (
     wire [31:0] inst_if_o;
 
     wire MemRead_if_o, MemtoReg_if_o, MemWrite_if_o, ALUSrc_if_o, RegWrite_if_o;
-    wire [2:0] ALUOp_if_o;
+    wire [3:0] ALUOp_if_o;
 
     wire Memread_id_i, MemtoReg_id_i, MemWrite_id_i, ALUSrc_id_i, RegWrite1_id_i, RegWrite2_id_i;
-    wire [2:0] ALUOp_id_i;
+    wire [3:0] ALUOp_id_i;
     wire [4:0] rd_id_i;
     wire [31:0] inst_id_i, WriteData_id_i;
 
@@ -18,7 +18,7 @@ module main (
     wire fwd_ex_1_id_o, fwd_ex_2_id_o, fwd_mem_1_id_o, fwd_mem_2_id_o;
 
     wire MemRead_ex_i, MemtoReg_ex_i, MemWrite_ex_i, ALUSrc_ex_i, RegWrite_ex_i;
-    wire [2:0] ALUOp_ex_i;
+    wire [3:0] ALUOp_ex_i;
     wire [31:0] rs1Data_ex_i, rs2Data_ex_i, imm32_ex_i;
     wire [2:0] func3_ex_i;
     wire [6:0] func7_ex_i;

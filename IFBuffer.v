@@ -3,12 +3,12 @@
 module IFBuffer(
   input clk, rst, stall, clear,
   input MemRead_i, MemtoReg_i, MemWrite_i, ALUSrc_i, RegWrite1_i, RegWrite2_i,
-  input [2:0] ALUOp_i, 
+  input [3:0] ALUOp_i, 
   input [31:0] inst_i,
   input [4:0] rd_i,
   input [31:0] WriteData_i,
   output reg MemRead_o, MemtoReg_o, MemWrite_o, ALUSrc_o, RegWrite1_o, RegWrite2_o,
-  output reg [2:0] ALUOp_o, 
+  output reg [3:0] ALUOp_o, 
   output reg [31:0] inst_o,
   output reg [4:0] rd_o,
   output reg [31:0] WriteData_o
@@ -25,7 +25,7 @@ module IFBuffer(
       MemtoReg_o <= 1'b0;
       MemWrite_o <= 1'b0;
       ALUSrc_o <= 1'b0;
-      ALUOp_o <= 3'b0;
+      ALUOp_o <= 4'b0;
       RegWrite1_o <= 1'b0;
       inst_o <= 32'b0;
     end else if (stall) begin
