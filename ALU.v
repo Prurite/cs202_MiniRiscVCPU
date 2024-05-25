@@ -22,6 +22,8 @@ module ALU (
                     3'h7: ALUResult = A & B; // and
                     3'h1: ALUResult = A << B[4:0]; // sll
                     3'h5: ALUResult = ((funct7 == 7'h20) ? A >>> B[4:0] : A >> B[4:0]); //srl, sra
+                    3'h2: ALUResult = $signed(A) < $signed(B) ? 1 : 0; // slt
+                    3'h3: ALUResult = A < B ? 1 : 0; // sltu
                     default: ALUResult = 0;
                 endcase
             4'd2: // Load and store
