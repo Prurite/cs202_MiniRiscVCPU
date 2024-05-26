@@ -4,10 +4,11 @@ module main (
     input clk_hw, rst,
     input Button,
     input [7:0] Switches,
-    output [7:0] seg, seg1, an
+    output [7:0] seg, seg1, an,
+    output EcallWait, InputWait
 );
     wire clk;
-    clk_wiz_0 uClkWiz(.reset(!rst), .clk_in1(clk_hw), .clk_out1(clk));
+    clk_wiz_0 uClkWiz(.clk_in1(clk_hw), .clk_out1(clk));
 
     wire [31:0] SegData;
 
@@ -121,6 +122,7 @@ module main (
         .switches(Switches), .button(Button),
         .a0(rs1Data_ex_i), .a7(rs2Data_ex_i),
         .EcallDone(EcallDone_ex_o), .EcallWrite(EcallWrite_ex_o),
+        .EcallWait(EcallWait), .needWrite(InputWait),
         .EcallResult(EcallResult_ex_o),
         .SegData(SegData)
     );

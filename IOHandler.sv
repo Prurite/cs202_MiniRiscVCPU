@@ -5,14 +5,12 @@ module IOHandler (
 	input [7:0] switches,
 	input button,
 	input [31:0] a0, a7,
-	output reg EcallDone, EcallWrite,
+	output reg EcallDone, EcallWrite, EcallWait, needWrite,
 	output reg [31:0] EcallResult,
 	output reg [31:0] SegData
 );
 	reg slowPrevButton, fastPrevButton;
-	reg EcallWait;
 	wire clk_slow;
-	reg needWrite;
 
 	ClkDiv uClkDiv(.clk(clk), .rst(rst), .clk_o(clk_slow));
 
@@ -23,8 +21,10 @@ module IOHandler (
 		fastPrevButton <= slowPrevButton;
 
 	always @(posedge clk) begin
-		if (!rst)
+		if (!rst) begin
 			{ EcallWait, EcallDone, EcallWrite, needWrite } <= 4'b0;
+			SegData <= 32'b0;
+		end
 		else if (EcallDone)
 			{ EcallWrite, EcallDone } <= 1'b0;
 		else if (Ecall && !EcallWait) begin

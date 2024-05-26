@@ -23,11 +23,15 @@ module Decoder(
 
     always @(posedge clk)
         if (!rst) begin
-            for (i = 0; i < 2; i = i + 1) r[i] <= 32'b0;
-            r[2] <= 32'd65536;
-            for (i = 3; i < 32; i = i + 1) r[i] <= 32'b0;
-        end
-        else if (EcallWrite) 
+            r[0] <= 32'b0; r[1] <= 32'b0; r[2] <= 32'd65536; r[3] <= 32'b0;
+            r[4] <= 32'b0; r[5] <= 32'b0; r[6] <= 32'b0; r[7] <= 32'b0;
+            r[8] <= 32'b0; r[9] <= 32'b0; r[10] <= 32'b0; r[11] <= 32'b0;
+            r[12] <= 32'b0; r[13] <= 32'b0; r[14] <= 32'b0; r[15] <= 32'b0;
+            r[16] <= 32'b0; r[17] <= 32'b0; r[18] <= 32'b0; r[19] <= 32'b0;
+            r[20] <= 32'b0; r[21] <= 32'b0; r[22] <= 32'b0; r[23] <= 32'b0;
+            r[24] <= 32'b0; r[25] <= 32'b0; r[26] <= 32'b0; r[27] <= 32'b0;
+            r[28] <= 32'b0; r[29] <= 32'b0; r[30] <= 32'b0; r[31] <= 32'b0;
+        end else if (EcallWrite) 
             r[10] <= EcallResult;
         else 
             r[rd_i] <= regWrite && rd_i ? writeData : r[rd_i];

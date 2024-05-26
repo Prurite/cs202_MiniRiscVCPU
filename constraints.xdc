@@ -44,3 +44,6 @@ set_property PACKAGE_PIN F3 [get_ports {seg1[3]}]
 set_property PACKAGE_PIN E2 [get_ports {seg1[2]}]
 set_property PACKAGE_PIN D2 [get_ports {seg1[1]}]
 set_property PACKAGE_PIN H2 [get_ports {seg1[0]}]
+
+set_property PACKAGE_PIN J2 [get_ports EcallWait]
+set_property PACKAGE_PIN K2 [get_ports InputWait]
