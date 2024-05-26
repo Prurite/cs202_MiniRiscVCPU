@@ -1,13 +1,13 @@
 `timescale 1ns/1ps
 
-module ALU (
+module ALU ( //port and relation reference from text book
     input [31:0] ReadData1, ReadData2, pc, imm32,
     input [3:0] ALUOp,
     input [2:0] funct3,
     input [6:0] funct7,
     input [1:0] ALUSrc,
     output reg [31:0] ALUResult,
-    output jmp, doBranch
+    output jmp, doBranch //process by harzard, doBranch play as stop, when it is active, the popeline will stop and clear error code caused by the branch
 );
     wire [31:0] A, B;
     assign A = ALUSrc[0] ? pc : ReadData1;

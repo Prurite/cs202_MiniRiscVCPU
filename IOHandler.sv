@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
 
-module IOHandler (
+module IOHandler ( //process input from terminal and output to display module
 	input clk, rst, Ecall,
 	input [7:0] switches,
 	input button,
@@ -14,13 +14,13 @@ module IOHandler (
 
 	ClkDiv uClkDiv(.clk(clk), .rst(rst), .clk_o(clk_slow));
 
-	always @(posedge clk_slow)
+	always @(posedge clk_slow) //use slow clock to debounce button
 		slowPrevButton <= button;
 
-	always @(posedge clk)
+	always @(posedge clk) //detect the change of button
 		fastPrevButton <= slowPrevButton;
 
-	always @(posedge clk) begin
+	always @(posedge clk) begin //ecalldone, ecallwrite, ecallwait, denote the state of system call
 		if (!rst) begin
 			{ EcallWait, EcallDone, EcallWrite, needWrite } <= 4'b0;
 			SegData <= 32'b0;
@@ -36,6 +36,12 @@ module IOHandler (
 			EcallDone <= 1'b1;
 			EcallWrite <= needWrite;
 			EcallResult <= needWrite ? {24'b0, switches} : 32'd0; // input
+		end else begin
+			EcallWait <= EcallWait;
+			EcallDone <= EcallDone;
+			EcallWrite <= EcallWrite;
+			needWrite <= needWrite;
+			SegData <= SegData;
 		end
 	end
 endmodule

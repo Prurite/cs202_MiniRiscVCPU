@@ -18,6 +18,8 @@ Start:
     beq a0, t0, Case2_5     #6
     addi t0, t0, 1
     beq a0, t0, Case2_6     #7
+    addi t0, t0, 1
+    beq a0, t0, Case3_1     #8
 
 Case1_1:
     li a7, 5
@@ -34,10 +36,12 @@ Case1_1:
 Case1_2:
     li a7, 5
     ecall
+    srli t1, a0, 7
+    beqz t1, no_signed_extension
+    ori a0, a0, 0xffffff00    #signed bit extension
+no_signed_extension:
     li a7, 1
     ecall
-    slli a0, a0, 24
-    srai a0, a0, 24 #signed bit extension
     addi sp, sp, -4
     sw a0, 0(sp)
 
@@ -46,8 +50,6 @@ Case1_3:
     ecall
     li a7, 1
     ecall
-    slli a0, a0, 24
-    srai a0, a0, 24 #signed bit extension
     addi sp, sp, -4
     sw a0, 0(sp)
 
@@ -242,9 +244,8 @@ Case2_3:
 Case2_4:
     li a7, 5              
     ecall                 
-    mv a1, a0
+    slli a1, a0, 8
     ecall
-    slli a0, a0, 8
     or a0, a0, a1
 
     # Output the result
@@ -384,6 +385,15 @@ zero_case_2_6:
     li a0, 0           # For fib(0), return 0
     jr ra              # Return to caller
 
+
+Case3_1:
+    li a0, 0x54268542
+    li a7, 1
+    ecall
+    auipc a0, 0xf0000
+    li a7, 1
+    ecall
+    j out
 
 out:
 j Start

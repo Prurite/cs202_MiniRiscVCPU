@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
 
-module IDBuffer (
+module IDBuffer ( //buffer between ID and EX, use to implete pipeline
   input clk, rst, clear,
   input fwd_ex_1, fwd_mem_1, fwd_ex_2, fwd_mem_2,
   input [31:0] fwd_ex_data, fwd_mem_data,
@@ -19,7 +19,7 @@ module IDBuffer (
 );
   assign neg_r = rst && !clear;
 
-  always @(negedge clk) begin
+  always @(negedge clk) begin //neg_r -> clear; else -> stall
     MemRead_o <= neg_r ? MemRead_i : 1'b0;
     MemtoReg_o <= neg_r ? MemtoReg_i : 1'b0;
     MemWrite_o <= neg_r ? MemWrite_i : 1'b0;
@@ -34,7 +34,7 @@ module IDBuffer (
     ecall_o <= neg_r ? ecall_i : 1'b0;
   end
 
-  always @(negedge clk) begin
+  always @(negedge clk) begin 
     if (!neg_r)
       rs1Data_o <= 32'b0;
     else if (fwd_ex_1)

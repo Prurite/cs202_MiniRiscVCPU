@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
 
-module IFetch (
+module IFetch ( //instruction fetch
     input clk, rst,
     input stall, ecall,
     input jmp, doBranch,
@@ -27,6 +27,6 @@ module IFetch (
             pc <= pc + 4;
     end
 
-    prgrom urom(.clka(clk), .addra(pc_with_nop[31:2]), .douta(inst));
+    prgrom urom(.clka(clk), .addra(pc_with_nop[31:2]), .douta(inst)); //program ROM
 
 endmodule
