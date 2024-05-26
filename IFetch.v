@@ -9,10 +9,12 @@ module IFetch (
     output [31:0] inst
 );
     reg lock_nop;
-    wire [31:0] inst_raw;
+    wire [31:0] pc_with_nop;
+
+    assign pc_with_nop = lock_nop ? -1 : pc;
 
     always @(negedge clk) begin
-        lock_nop <= ecall;
+        lock_nop <= rst ? ecall : 1'b0;
         if (!rst)
             pc <= 32'b0;
         else if (jmp)
@@ -25,7 +27,6 @@ module IFetch (
             pc <= pc + 4;
     end
 
-    prgrom urom(.clka(clk), .addra(pc[31:2]), .douta(inst_raw));
+    prgrom urom(.clka(clk), .addra(pc_with_nop[31:2]), .douta(inst));
 
-    assign inst = lock_nop ? 32'b0 : inst_raw;
 endmodule

@@ -11,9 +11,10 @@ module IOHandler (
 	output [3:0] seg_sel [1:0]
 );
 	reg [31:0] SegData;
-	reg prevButton;
+	reg slowPrevButton, fastPrevButton;
 	reg EcallWait;
 	wire clk_slow;
+	reg needWrite;
 
 	// Instantiate the 7-segment display module
 	// TODO
@@ -21,20 +22,25 @@ module IOHandler (
 	ClkDiv uClkDiv( .clk(clk), .rst(rst), .clk_o(clk_slow));
 
 	always @(posedge clk_slow)
-		prevButton <= button;
+		slowPrevButton <= button;
+
+	always @(posedge clk)
+		fastPrevButton <= slowPrevButton;
 
 	always @(posedge clk) begin
 		if (!rst)
-			{ EcallWait, EcallDone, EcallWrite } <= 3'b0;
+			{ EcallWait, EcallDone, EcallWrite, needWrite } <= 4'b0;
+		else if (EcallDone)
+			{ EcallWrite, EcallDone } <= 1'b0;
 		else if (Ecall && !EcallWait) begin
 			EcallWait <= 1'b1;
 			SegData <= a7 == 32'd1 ? a0 : 32'd0; // output
-		end else if (EcallWait && !prevButton && button) begin
+			needWrite <= a7 == 32'd5;
+		end else if (EcallWait && !fastPrevButton && slowPrevButton) begin
 			EcallWait <= 1'b0;
 			EcallDone <= 1'b1;
-			EcallWrite <= a7 == 32'd5;
-			EcallResult <= a7 == 32'd5 ? {24'b0, switches} : 32'd0; // input
-		end else if (EcallDone)
-			EcallDone <= 1'b0;
+			EcallWrite <= needWrite;
+			EcallResult <= needWrite ? {24'b0, switches} : 32'd0; // input
+		end
 	end
 endmodule

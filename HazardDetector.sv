@@ -19,10 +19,11 @@ module HazardDetector(
 
     reg [31:0] preInst1, preInst2;
 
+`define op inst[6:0]
 `define pre1op preInst1[6:0]
 `define pre2op preInst2[6:0]
-`define rs1 inst[19:15]
-`define rs2 inst[24:20]
+`define rs1 (`op == 7'b1110011 ? 5'd10 : inst[19:15])
+`define rs2 (`op == 7'b1110011 ? 5'd17 : inst[24:20])
 `define rd inst[11:7]
 `define pre1rd preInst1[11:7]
 `define pre2rd preInst2[11:7]
