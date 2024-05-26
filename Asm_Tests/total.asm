@@ -2,7 +2,7 @@ Start:
     li a7, 5
     ecall
     li t0, 1
-    beq a0, t0, Case1       #1
+    beq a0, t0, Case1_1       #1
     addi t0, t0, 1
     beq a0, t0, Case2_1     #2
     addi t0, t0, 1
@@ -16,80 +16,89 @@ Start:
     addi t0, t0, 1
     beq a0, t0, Case2_6     #7
 
-Case1:
+Case1_1:
     li a7, 5
     ecall
+    mv t1, a0
+    ecall
+    mv t2, a0
+    li a7, 1
+    mv a0, t1
+    ecall
+    mv a0, t2
+    ecall
+
+Case1_2:
+    li a7, 5
     ecall
     li a7, 1
     ecall
+    slli a0, a0, 24
+    srai a0, a0, 24 #signed bit extension
+    addi sp, sp, -4
+    sw a0, 0(sp)
 
-Second:
+Case1_3:
     li a7, 5
+    ecall
+    li a7, 1
     ecall
     slli a0, a0, 24
     srai a0, a0, 24 #signed bit extension
     addi sp, sp, -4
     sw a0, 0(sp)
 
-Third:
-    li a7, 5
-    ecall
-    slli a0, a0, 24
-    srai a0, a0, 24 #signed bit extension
-    addi sp, sp, -4
-    sw a0, 0(sp)
-
-Fourth:
-    lw a1, 0(sp)
-    addi sp, sp ,4
+Case1_4:
     lw a2, 0(sp)
+    addi sp, sp ,4
+    lw a1, 0(sp)
     addi sp, sp, 4
     li a7, 1
-    beq a1, a2, light_beq
+    beq a1, a2, Case1_5
     li a0, 0
     ecall
-    j Fifth
+    j Case1_5
 light_beq:
     li a0, 1
     ecall
-    j Fifth
+    j Case1_5
 
 
 
-Fifth:
+Case1_5:
     blt a1, a2, light_blt
     li a0, 0
     ecall
-    j Sixth
+    j Case1_6
 light_blt:
     li a0, 1
     ecall
-    j Sixth
+    j Case1_6
 
 
-Sixth:
+Case1_6:
     bge a1, a2, light_bge
     li a0, 0
     ecall
-    j Seventh
+    j Case1_7
 light_bge:
     li a0, 1
     ecall
-    j Seventh
+    j Case1_7
 
 
-Seventh:
+Case1_7:
     bltu a1, a2, light_bltu
     li a0, 0
     ecall
-    j Eighth
+    j Case1_8
 light_bltu:
     li a0, 1
     ecall
-    j Eighth
+    j Case1_8
 
 
-Eighth:
+Case1_8:
     bgeu a1, a2, light_bgeu
     li a0, 0
     ecall
@@ -128,8 +137,9 @@ clz_done:
 Case2_2:
     li a7, 5
     ecall	            
-    slli a0, a0, 8
-    ecall               # a0: the floating point
+    slli t0, a0, 8
+    ecall
+    or a0, a0, t0               # a0: the floating point
 	srli s0, a0, 15		# s0: sign bit
 	srli a1, a0, 10
 	andi a1, a1, 0x1f	# a1: biased exp
@@ -206,7 +216,7 @@ Case2_3:
     mv a2, a0
 
     # Perform addition
-    add a3, a1, a2       # Add both numbers, result in a2
+    add a3, a1, a2       # Add both numbers, result in a3
 
     # Handle overflow
     srli  a4, a3, 8        # Right-shift to  gain overflowed bits
@@ -232,7 +242,7 @@ Case2_4:
     ecall
     slli a0, a0, 8
     or a1, a1, a0
-    ecall
+    mv a0, a1
 
     # Output the result
     li a7, 1              # PrintInt system call number

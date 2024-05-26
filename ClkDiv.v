@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
 
-module clkDiv(
+module ClkDiv(
 	input clk, rst,
 	output reg clk_o
 );
@@ -9,7 +9,7 @@ module clkDiv(
 		if (!rst) begin
 			clk_o <= 1'b0;
 			cnt <= 0;
-		end else if (cnt == 30000) begin
+		end else if (cnt == 3) begin
 			clk_o <= ~clk_o;
 			cnt <= 0;
 		end else

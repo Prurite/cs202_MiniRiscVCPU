@@ -2,11 +2,11 @@
 
 module Decoder(
     input clk, rst,
-    input regWrite,
+    input regWrite, EcallWrite,
     input [31:0] inst,
     input [4:0] rd_i, // Register to write in current cycle
-    input [31:0] writeData,
-    output [31:0] rs1Data, rs2Data, a0, a7,
+    input [31:0] writeData, EcallResult,
+    output [31:0] rs1Data, rs2Data,
     output [4:0] rd_o, // Destination register of current instruction
     output reg [31:0] imm32
 );
@@ -17,7 +17,7 @@ module Decoder(
     wire [4:0] rs1, rs2;
     integer i;
 
-    assign rd_o = `isEcall ? 5'd10 : inst[11:7];
+    assign rd_o = inst[11:7];
     assign rs1 = `isEcall ? 5'd10 : inst[19:15];
     assign rs2 = `isEcall ? 5'd17 : inst[24:20];
 
@@ -27,7 +27,9 @@ module Decoder(
             r[2] <= 32'd65536;
             for (i = 3; i < 32; i = i + 1) r[i] <= 32'b0;
         end
-        else
+        else if (EcallWrite) 
+            r[10] <= EcallResult;
+        else 
             r[rd_i] <= regWrite && rd_i ? writeData : r[rd_i];
 
     assign rs1Data = r[rs1];

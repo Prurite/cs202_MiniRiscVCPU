@@ -4,12 +4,12 @@ module IDBuffer (
   input clk, rst, clear,
   input fwd_ex_1, fwd_mem_1, fwd_ex_2, fwd_mem_2,
   input [31:0] fwd_ex_data, fwd_mem_data,
-  input MemRead_i, MemtoReg_i, MemWrite_i, RegWrite_i,
+  input MemRead_i, MemtoReg_i, MemWrite_i, RegWrite_i, ecall_i,
   input [1:0] ALUSrc_i,
   input [3:0] ALUOp_i,
   input [31:0] rs1Data_i, rs2Data_i, imm32_i, pc_i, inst,
   input [4:0] rd_i,
-  output reg MemRead_o, MemtoReg_o, MemWrite_o, RegWrite_o,
+  output reg MemRead_o, MemtoReg_o, MemWrite_o, RegWrite_o, ecall_o,
   output reg [1:0] ALUSrc_o,
   output reg [3:0] ALUOp_o,
   output reg [31:0] rs1Data_o, rs2Data_o, imm32_o, pc_o,
@@ -31,6 +31,7 @@ module IDBuffer (
     func3 <= neg_r ? inst[14:12] : 3'b0;
     func7 <= neg_r ? inst[31:25] : 7'b0;
     rd_o <= neg_r ? rd_i : 5'b0;
+    ecall_o <= neg_r ? ecall_i : 1'b0;
   end
 
   always @(negedge clk) begin

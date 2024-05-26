@@ -18,7 +18,7 @@ module IOHandler (
 	// Instantiate the 7-segment display module
 	// TODO
 
-	Clkdiv uClkdiv( .clk(clk), .rst(rst), .clk_o(clk_slow));
+	ClkDiv uClkDiv( .clk(clk), .rst(rst), .clk_o(clk_slow));
 
 	always @(posedge clk_slow)
 		prevButton <= button;
