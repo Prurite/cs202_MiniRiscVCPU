@@ -36,6 +36,12 @@ module IOHandler ( //process input from terminal and output to display module
 			EcallDone <= 1'b1;
 			EcallWrite <= needWrite;
 			EcallResult <= needWrite ? {24'b0, switches} : 32'd0; // input
+		end else begin
+			EcallWait <= EcallWait;
+			EcallDone <= EcallDone;
+			EcallWrite <= EcallWrite;
+			needWrite <= needWrite;
+			SegData <= SegData;
 		end
 	end
 endmodule

@@ -10,7 +10,7 @@ module DigitalTube( //tube controller
     reg[3:0] disp_dat = 0;
     reg[2:0] disp_bit = 0;
 
-    parameter maxcnt = 50000; //100MHz -> 2KHz
+    localparam maxcnt = 50000; //100MHz -> 2KHz
     
     always@(posedge clk)  //internal clock divider, 100MHz -> 2KHz
         if(divclk_cnt == maxcnt) begin
