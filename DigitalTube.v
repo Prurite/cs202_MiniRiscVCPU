@@ -5,18 +5,22 @@
 module DigitalTube(
     input clk,
     input[31:0] show_data, 
-    output[7:0] seg,
-    output[7:0] seg1,
-    output[7:0] an 
+    output reg [7:0] seg,
+    output reg [7:0] seg1,
+    output reg [7:0] an 
 );
     reg[18:0] divclk_cnt = 0;
     reg divclk = 0;
-    reg[7:0] seg=0;
-    reg[7:0] seg1=0;
-    reg[7:0] an=8'b00000001;
+    
     reg[3:0] disp_dat=0;
     reg[2:0] disp_bit=0;
     parameter maxcnt = 50000;
+    
+    initial begin
+        seg=0;
+        seg1=0;
+        an=8'b00000001;
+    end
     always@(posedge clk)
     begin
         if(divclk_cnt==maxcnt)
