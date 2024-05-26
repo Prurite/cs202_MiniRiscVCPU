@@ -4,17 +4,30 @@
 // beq, lw, sw, and, or, add, sub, addi, andi, ori
 
 module Controller (
+    input clk, rst,
     input [31:0] inst,
-    output MemRead, MemtoReg, MemWrite, RegWrite,
+    input EcallDone,
+    output MemRead, MemtoReg, MemWrite, RegWrite, Ecall,
     output [1:0] ALUSrc,
     output reg [3:0] ALUOp
 );
 `define i inst[6:0]
 
+    reg EcallWait;
+
     assign MemRead = (`i == 7'b0000011);
     assign MemtoReg = (`i == 7'b0000011);
     assign MemWrite = (`i == 7'b0100011);
     assign RegWrite = (`i == 7'b0000011) || (`i ==? 7'b0x10011) || (`i ==? 7'b110x111) || (`i ==? 7'b0x10111);
+    assign Ecall = (`i == 7'b1110011) || EcallWait;
+
+    always @(posedge clk)
+        if (EcallDone || !rst)
+            EcallWait <= 1'b0;
+        else if (`i == 7'b1110011)
+            EcallWait <= 1'b1;
+        else
+            EcallWait <= EcallWait;
 
     // ALUSrc[0]: 0 reg 1 pc
     assign ALUSrc[0] = (`i ==? 7'b110x111 || `i == 7'b0010111);

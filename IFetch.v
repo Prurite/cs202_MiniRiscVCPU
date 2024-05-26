@@ -2,18 +2,22 @@
 
 module IFetch (
     input clk, rst,
-    input stall,
+    input stall, ecall,
     input jmp, doBranch,
     input [31:0] imm32, rs1,
     output reg [31:0] pc,
     output [31:0] inst
 );
+    reg lock_nop;
+    wire [31:0] inst_raw;
+
     always @(negedge clk) begin
+        lock_nop <= ecall;
         if (!rst)
             pc <= 32'b0;
         else if (jmp)
             pc <= rs1 + imm32;
-        else if (stall)
+        else if (stall || lock_nop)
             pc <= pc;
         else if (doBranch)
             pc <= pc - 8 + imm32;
@@ -21,6 +25,7 @@ module IFetch (
             pc <= pc + 4;
     end
 
+    prgrom urom(.clka(clk), .addra(pc[31:2]), .douta(inst_raw));
 
-    prgrom urom(.clka(clk), .addra(pc[31:2]), .douta(inst));
+    assign inst = lock_nop ? 32'b0 : inst_raw;
 endmodule

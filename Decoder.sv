@@ -6,17 +6,20 @@ module Decoder(
     input [31:0] inst,
     input [4:0] rd_i, // Register to write in current cycle
     input [31:0] writeData,
-    output [31:0] rs1Data, rs2Data,
+    output [31:0] rs1Data, rs2Data, a0, a7,
     output [4:0] rd_o, // Destination register of current instruction
     output reg [31:0] imm32
 );
+`define op inst[6:0]
+`define isEcall (`op == 7'b1110011)
+
     reg [31:0] r[31:0];
     wire [4:0] rs1, rs2;
     integer i;
 
-    assign rd_o = inst[11:7];
-    assign rs1 = inst[19:15];
-    assign rs2 = inst[24:20];
+    assign rd_o = `isEcall ? 5'd10 : inst[11:7];
+    assign rs1 = `isEcall ? 5'd10 : inst[19:15];
+    assign rs2 = `isEcall ? 5'd17 : inst[24:20];
 
     always @(posedge clk)
         if (!rst) begin
