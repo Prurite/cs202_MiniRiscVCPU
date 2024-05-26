@@ -8,8 +8,11 @@ module SegDisplayOutput (
 );
     // Local parameters for 7-seg display
     reg [3:0] i; // 1 to 4; 0 off
+	wire clk_o;
 
-    always @(posedge clk) begin
+	ClkDiv uClkDiv(.clk(clk), .rst(rst), .clk_o(clk_o));
+
+    always @(posedge clk_o) begin
         // 1st group
         case(x[(i-1)*4 +: 4])
             4'h0: seg0 <= 8'b00111111; 4'h1: seg0 <= 8'b00000110; 4'h2: seg0 <= 8'b01011011;
@@ -33,8 +36,8 @@ module SegDisplayOutput (
         endcase
     end
 
-    always @(posedge clk)
-        if (rst) begin
+    always @(posedge clk_o)
+        if (!rst) begin
             i <= 4'd1;
             seg_sel0 <= 4'b0;
             seg_sel1 <= 4'b0;

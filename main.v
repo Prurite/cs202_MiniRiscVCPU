@@ -1,12 +1,15 @@
 `timescale 1ns/1ps
 
 module main (
-    input clk, rst,
+    input clk_hw, rst,
     input Button,
     input [7:0] Switches,
     output [7:0] seg0, seg1,
 	output [3:0] seg_sel0, seg_sel1
 );
+    wire clk;
+    clk_wiz_0 uClkWiz(.reset(!rst), .clk_in1(clk_hw), .clk_out1(clk));
+
     wire [31:0] SegData;
 
     wire [31:0] inst_if_o, pc_if_o;
