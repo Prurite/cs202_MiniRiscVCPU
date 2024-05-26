@@ -9,7 +9,7 @@ module ClkDiv( //clk divider, 100MHz -> 13.33MHz
 		if (!rst) begin
 			clk_o <= 1'b0;
 			cnt <= 0;
-		end else if (cnt == 7500) begin
+		end else if (cnt == 15000) begin
 		// end else if (cnt == 1) begin
 			clk_o <= ~clk_o;
 			cnt <= 0;
