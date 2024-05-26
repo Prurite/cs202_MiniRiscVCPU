@@ -85,7 +85,7 @@ Case1_6:
     ecall
     j Case1_7
 light_bge:
-    li a0, 0xC000001
+    li a0, 0xC0000001
     ecall
     j Case1_7
 
@@ -113,7 +113,7 @@ light_bgeu:
 
 
 Case2_1:
-    li a7 5 # System call for ReadInt
+    li a7, 5 # System call for ReadInt
     ecall
     andi a0, a0, 0x000000FF # low 8 bits
 
@@ -140,9 +140,10 @@ clz_done:
 Case2_2:
     li a7, 5
     ecall	            
-    slli t0, a0, 8
+    mv t0, a0
     ecall
-    or a0, a0, t0               # a0: the floating point
+    slli a0, a0, 8
+    or a0, a0, t0       # a0: the floating point
 	srli s0, a0, 15		# s0: sign bit
 	srli a1, a0, 10
 	andi a1, a1, 0x1f	# a1: biased exp
@@ -198,9 +199,9 @@ apply_sign:
 		
 done:
     li a7, 1
-    mv a0, a4
-    ecall
     mv a0, a5
+    ecall
+    mv a0, a4
     ecall
     mv a0, a3
     ecall
@@ -244,8 +245,7 @@ Case2_4:
     mv a1, a0
     ecall
     slli a0, a0, 8
-    or a1, a1, a0
-    mv a0, a1
+    or a0, a0, a1
 
     # Output the result
     li a7, 1              # PrintInt system call number
@@ -270,7 +270,7 @@ loop_2_5:
     addi a0, t3, -1     # Set a0 to i - 1 (correct value before exiting)
     li a7, 1            # System call for printing an integer
     ecall               # Print the result in a0
-    mv t4, a0           # The stack counter
+    mv a0, t4           # The stack counter
     ecall
     j out           # Exit program
 
@@ -340,30 +340,31 @@ increment_2_6:
 
 fib_2_6:
     li t1, 2
-    blt a0, t1, base_case_2_6 # If a0 < 2, handle base cases directly
+    blt a0, t1, base_case_2_5 # If a0 < 2, handle base cases directly
 
     addi sp, sp, -16   # Allocate stack frame for 3 items (return address, n, saved t1)
     sw ra, 0(sp)       # Save return address
+
     li a7, 1
-    mv t4, a0
-    mv a0, ra
-    ecall
-    mv a0, t4
     sw a0, 4(sp)       # Save current a0 (n)
     ecall
+
     sw t1, 8(sp)       # Save t1
     mv t4, a0
-    mv a0, t1
-    ecall
     mv a0, t4
+    ecall
+    mv a0 t4
+
     addi a0, a0, -1    # Compute fib(n-1)
-    jal fib_2_6            # Recursive call
+    jal fib_2_5            # Recursive call
     lw t1, 8(sp)       # Restore t1
+
     sw a0, 12(sp)      # Save result of fib(n-1) in the stack
     ecall
+
     lw t0, 4(sp)       # Load original n
     addi a0, t0, -2    # Set a0 to n-2
-    jal fib_2_6            # Recursive call for fib(n-2)
+    jal fib_2_5            # Recursive call for fib(n-2)
     lw t1, 8(sp)       # Restore t1 again
 
     lw t0, 12(sp)      # Load result of fib(n-1) from stack
