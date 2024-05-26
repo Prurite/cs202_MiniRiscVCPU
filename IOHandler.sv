@@ -14,13 +14,13 @@ module IOHandler ( //process input from terminal and output to display module
 
 	ClkDiv uClkDiv(.clk(clk), .rst(rst), .clk_o(clk_slow));
 
-	always @(posedge clk_slow)
+	always @(posedge clk_slow) //use slow clock to debounce button
 		slowPrevButton <= button;
 
-	always @(posedge clk)
+	always @(posedge clk) //detect the change of button
 		fastPrevButton <= slowPrevButton;
 
-	always @(posedge clk) begin
+	always @(posedge clk) begin //ecalldone, ecallwrite, ecallwait, denote the state of system call
 		if (!rst) begin
 			{ EcallWait, EcallDone, EcallWrite, needWrite } <= 4'b0;
 			SegData <= 32'b0;

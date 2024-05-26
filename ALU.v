@@ -7,7 +7,7 @@ module ALU ( //port and relation reference from text book
     input [6:0] funct7,
     input [1:0] ALUSrc,
     output reg [31:0] ALUResult,
-    output jmp, doBranch //process by harzard
+    output jmp, doBranch //process by harzard, doBranch play as stop, when it is active, the popeline will stop and clear error code caused by the branch
 );
     wire [31:0] A, B;
     assign A = ALUSrc[0] ? pc : ReadData1;

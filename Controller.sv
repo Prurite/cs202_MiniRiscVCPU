@@ -25,7 +25,7 @@ module Controller ( //center unit, first process the instruction
         prevDoBranch <= doBranch;
 
     always @(posedge clk) //'system call' process, wait for the previous system call to finish
-        if (EcallDone || !rst || doBranch || prevDoBranch)
+        if (EcallDone || !rst || doBranch || prevDoBranch) //play as stop
             EcallWait <= 1'b0;
         else if (`i == 7'b1110011)
             EcallWait <= 1'b1;

@@ -19,7 +19,7 @@ module IDBuffer ( //buffer between ID and EX, use to implete pipeline
 );
   assign neg_r = rst && !clear;
 
-  always @(negedge clk) begin 
+  always @(negedge clk) begin //neg_r -> clear; else -> stall
     MemRead_o <= neg_r ? MemRead_i : 1'b0;
     MemtoReg_o <= neg_r ? MemtoReg_i : 1'b0;
     MemWrite_o <= neg_r ? MemWrite_i : 1'b0;

@@ -67,7 +67,7 @@ module main ( //top module
     );
 
     IFBuffer uIFBuffer(
-        .clk(clk), .rst(rst), .stall(stall), .clear(doBranch_ex_o || EcallDone_ex_o),
+        .clk(clk), .rst(rst), .stall(stall), .clear(doBranch_ex_o || EcallDone_ex_o),// branch or ecall need to clear the pipeline
         .MemRead_i(MemRead_if_o), .MemtoReg_i(MemtoReg_if_o), .MemWrite_i(MemWrite_if_o),
         .ALUSrc_i(ALUSrc_if_o), .RegWrite1_i(RegWrite_if_o), .RegWrite2_i(RegWrite_mem_i), .ALUOp_i(ALUOp_if_o),
         .ecall_i(Ecall_if_o),
@@ -98,7 +98,7 @@ module main ( //top module
     );
 
     IDBuffer uIDBuffer(
-        .clk(clk), .rst(rst), .clear(stall || doBranch_ex_o || EcallDone_ex_o),
+        .clk(clk), .rst(rst), .clear(stall || doBranch_ex_o || EcallDone_ex_o), //receive stall/doBranch/EcallDone, need to clear the pipeline
         .fwd_ex_1(fwd_ex_1_id_o), .fwd_mem_1(fwd_mem_1_id_o),
         .fwd_ex_2(fwd_ex_2_id_o), .fwd_mem_2(fwd_mem_2_id_o),
         .fwd_ex_data(ALUResult_ex_o), .fwd_mem_data(MemData_mem_o),
