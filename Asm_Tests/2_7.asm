@@ -1,60 +1,62 @@
-.text
-.globl main
+Case2_5:
+    li a7, 5            # System call for reading an integer
+    ecall               # a0 now contains the input integer
+    mv t2, a0           # Store input number in t2 for comparison
 
-# Main program
-main:
-    # Set up the stack pointer
+    li t3, 1            # Initialize loop variable i = 1
+    li t4, 0
 
-    # Read the input integer
-    li a7, 5              # System call number for ReadInt
-    ecall                 # Perform system call to read the integer
-    mv t0, a0             # Store the input integer in t0
+loop_2_5:
+    mv a0, t3           # Move i to a0
+    jal fib_2_5             # Calculate fib(i), result in a0
 
-    # Initialize counter in t1
-    li t1, 0              # Counter for Fibonacci numbers less than the input
-    li t2, 0              # Counter for stack in and out
+    blt a0, t2, increment_2_5 # If fib(i) < input, continue loop
+    addi a0, t3, -1     # Set a0 to i - 1 (correct value before exiting)
+    li a7, 1            # System call for printing an integer
+    ecall               # Print the result in a0
+    mv t4, a0           # The stack counter
+    ecall
+    li a7, 10           # Exit program
+    ecall
 
-    # Call recursive Fibonacci function with initial values F(0) = 0, F(1) = 1
-    li a0, 0              # Fibonacci F(0)
-    li a1, 1              # Fibonacci F(1)
-    jal fibonacci        # Call the Fibonacci function
+increment_2_5:
+    addi t3, t3, 1      # Increment i
+    j loop_2_5              # Jump back to start of loop
 
-    # Output the result
-    mv a0, t1             # Move the count to a0 for printing
-    #mv a0, t2            The final program should have this instruction instead of the one in line23
-    li a7, 1              # System call number for PrintInt
-    ecall                 # Print the result
+fib_2_5:
+    li t1, 2
+    blt a0, t1, base_case_2_5 # If a0 < 2, handle base cases directly
 
-    # Exit the program
-    li a7, 10             # System call number for exit
-    ecall                 # Perform exit system call
+    addi sp, sp, -16   # Allocate stack frame for 3 items (return address, n, saved t1)
+    addi t4, t4, 4
+    sw ra, 0(sp)       # Save return address
+    sw a0, 4(sp)       # Save current a0 (n)
+    sw t1, 8(sp)       # Save t1
 
-# Recursive Fibonacci function
-fibonacci:
-    # Save return address to stack
-    addi sp, sp, -4       # Decrement stack pointer to make space
-    addi t2, t2, 1
-    sw ra, 0(sp)          # Store return address on stack
+    addi a0, a0, -1    # Compute fib(n-1)
+    jal fib_2_5            # Recursive call
+    lw t1, 8(sp)       # Restore t1
+    sw a0, 12(sp)      # Save result of fib(n-1) in the stack
 
-    # Check if next Fibonacci number is >= input
-    bge a1, t0, cleanup   # If F(n) >= input, cleanup and return
+    lw t0, 4(sp)       # Load original n
+    addi a0, t0, -2    # Set a0 to n-2
+    jal fib_2_5            # Recursive call for fib(n-2)
+    lw t1, 8(sp)       # Restore t1 again
 
-    # Increment counter since a0 is a valid Fibonacci number
-    addi t1, t1, 1
+    lw t0, 12(sp)      # Load result of fib(n-1) from stack
+    add a0, a0, t0     # a0 = fib(n-2) + fib(n-1)
 
-    # Prepare next Fibonacci number
-    add a2, a0, a1        # Calculate next Fibonacci number F(n) = F(n-1) + F(n)
-    mv a0, a1             # Update old Fibonacci number
-    mv a1, a2             # Update current Fibonacci number
+    lw ra, 0(sp)       # Restore return address
+    addi sp, sp, 16    # Deallocate stack frame
+    addi t4, t4, 4
+    jr ra              # Return to caller
 
-    # Recursive call
-    jal fibonacci        # Recursive call
+base_case_2_5:
+    li t1, 1
+    beq a0, zero, zero_case_2_5  # if a0 is 0, jump to zero_case
+    li a0, 1           # For fib(1) and fib(2), return 1
+    jr ra              # Return to caller
 
-cleanup:
-    # Restore return address from stack
-    lw ra, 0(sp)          # Load return address from stack
-    addi t2, t2, 1
-    addi sp, sp, 4        # Increment stack pointer to remove address
-
-    ret                   # Return from function
-
+zero_case_2_5:
+    li a0, 0           # For fib(0), return 0
+    jr ra              # Return to caller
