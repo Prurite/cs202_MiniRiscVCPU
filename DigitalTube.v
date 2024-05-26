@@ -30,7 +30,7 @@ module DigitalTube(
         end
     end
     always@(posedge divclk) begin
-        if(disp_bit >= 4)
+        if(disp_bit >= 7)
             disp_bit=0;
          else
             disp_bit=disp_bit+1'b1;
@@ -62,18 +62,18 @@ module DigitalTube(
             end
             3'b101 :
             begin
-                disp_dat=show_data[19:16];
-                an=8'b00010000;
+                disp_dat=show_data[23:20];
+                an=8'b00100000;
             end
             3'b110:
             begin
-                disp_dat=show_data[19:16];
-                an=8'b00010000;
+                disp_dat=show_data[27:24];
+                an=8'b01000000;
             end
             3'b111:
             begin
-                disp_dat=show_data[19:16];
-                an=8'b00010000;
+                disp_dat=show_data[31:28];
+                an=8'b10000000;
              end
             default:
             begin
