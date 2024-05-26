@@ -14,7 +14,7 @@ module IFetch (
     assign pc_with_nop = lock_nop ? -1 : pc;
 
     always @(negedge clk) begin
-        lock_nop <= rst ? ecall : 1'b0;
+        lock_nop <= rst && !doBranch ? ecall : 1'b0;
         if (!rst)
             pc <= 32'b0;
         else if (jmp)

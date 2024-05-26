@@ -6,14 +6,14 @@
 module Controller (
     input clk, rst,
     input [31:0] inst,
-    input EcallDone,
+    input doBranch, EcallDone,
     output MemRead, MemtoReg, MemWrite, RegWrite, Ecall,
     output [1:0] ALUSrc,
     output reg [3:0] ALUOp
 );
 `define i inst[6:0]
 
-    reg EcallWait;
+    reg EcallWait, prevDoBranch;
 
     assign MemRead = (`i == 7'b0000011);
     assign MemtoReg = (`i == 7'b0000011);
@@ -22,7 +22,10 @@ module Controller (
     assign Ecall = (`i == 7'b1110011) || EcallWait;
 
     always @(posedge clk)
-        if (EcallDone || !rst)
+        prevDoBranch <= doBranch;
+
+    always @(posedge clk)
+        if (EcallDone || !rst || doBranch || prevDoBranch)
             EcallWait <= 1'b0;
         else if (`i == 7'b1110011)
             EcallWait <= 1'b1;

@@ -4,12 +4,12 @@ module sim_2;
     reg rst;
     reg [7:0] switches;
     reg button;
-    main umain(.clk(clk), .rst(rst), .Switches(switches), .Button(button));
+    main umain(.clk_hw(clk), .rst(rst), .Switches(switches), .Button(button));
 
     initial begin
         clk = 1'b0;
         rst = 1'b0;
-        switches = 8'b0001_0101;
+        switches = 8'b0000_0010;
         button = 1'b0;
         #17 rst = ~rst;
     end
@@ -20,14 +20,8 @@ module sim_2;
     end
 
     always begin
-        #150 button = 1'b1;
-        #150 button = 1'b0;
-        #150 button = 1'b1;
-        #150 button = 1'b0;
-    end
-
-    initial begin
-        #400 switches = 8'b0110_1101;
+        #50 button = 1'b1;
+        #50 button = 1'b0;
     end
 
 endmodule

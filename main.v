@@ -9,6 +9,7 @@ module main (
 );
     wire clk;
     clk_wiz_0 uClkWiz(.clk_in1(clk_hw), .clk_out1(clk));
+    // assign clk = clk_hw;
 
     wire [31:0] SegData;
 
@@ -58,13 +59,10 @@ module main (
     Controller uController(
         .clk(clk), .rst(rst),
         .inst(inst_if_o),
-        .EcallDone(EcallDone_ex_o),
-        .MemRead(MemRead_if_o),
-        .MemtoReg(MemtoReg_if_o),
-        .MemWrite(MemWrite_if_o),
+        .EcallDone(EcallDone_ex_o), .doBranch(doBranch_ex_o),
+        .MemRead(MemRead_if_o), .MemtoReg(MemtoReg_if_o), .MemWrite(MemWrite_if_o),
+        .RegWrite(RegWrite_if_o), .Ecall(Ecall_if_o),
         .ALUSrc(ALUSrc_if_o),
-        .RegWrite(RegWrite_if_o),
-        .Ecall(Ecall_if_o),
         .ALUOp(ALUOp_if_o)
     );
 
