@@ -1,8 +1,11 @@
 Start:
+    li a7, 1
+    li a0, 0xFFFFFFFF
+    ecall
     li a7, 5
     ecall
     li t0, 1
-    beq a0, t0, Case1_1       #1
+    beq a0, t0, Case1_1     #1
     addi t0, t0, 1
     beq a0, t0, Case2_1     #2
     addi t0, t0, 1
@@ -55,11 +58,11 @@ Case1_4:
     addi sp, sp, 4
     li a7, 1
     beq a1, a2, Case1_5
-    li a0, 0
+    li a0, 0xA0000000
     ecall
     j Case1_5
 light_beq:
-    li a0, 1
+    li a0, 0xA0000001
     ecall
     j Case1_5
 
@@ -67,44 +70,44 @@ light_beq:
 
 Case1_5:
     blt a1, a2, light_blt
-    li a0, 0
+    li a0, 0xB0000000
     ecall
     j Case1_6
 light_blt:
-    li a0, 1
+    li a0, 0xB0000001
     ecall
     j Case1_6
 
 
 Case1_6:
     bge a1, a2, light_bge
-    li a0, 0
+    li a0, 0xC0000000
     ecall
     j Case1_7
 light_bge:
-    li a0, 1
+    li a0, 0xC000001
     ecall
     j Case1_7
 
 
 Case1_7:
     bltu a1, a2, light_bltu
-    li a0, 0
+    li a0, 0xD0000000
     ecall
     j Case1_8
 light_bltu:
-    li a0, 1
+    li a0, 0xD0000001
     ecall
     j Case1_8
 
 
 Case1_8:
     bgeu a1, a2, light_bgeu
-    li a0, 0
+    li a0, 0xE0000000
     ecall
     j out
 light_bgeu:
-    li a0, 1
+    li a0, 0xE0000001
     ecall
     j out
 
