@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
 
-module ClkDiv(
+module ClkDiv( //clk divider, 100MHz -> 13.33MHz
 	input clk, rst,
 	output reg clk_o
 );

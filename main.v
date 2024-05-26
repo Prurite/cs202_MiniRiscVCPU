@@ -1,8 +1,8 @@
 `timescale 1ns/1ps
 
-module main (
+module main ( //top module
     input clk_hw, rst,
-    input Button,
+    input Button, //R11
     input [7:0] Switches,
     output [7:0] seg, seg1, an,
     output EcallWait, InputWait

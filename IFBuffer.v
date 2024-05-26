@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
 
-module IFBuffer(
+module IFBuffer( //buffer between IF and ID, use to implete pipeline
   input clk, rst, stall, clear,
   input MemRead_i, MemtoReg_i, MemWrite_i, RegWrite1_i, RegWrite2_i, ecall_i,
   input [1:0] ALUSrc_i,

@@ -3,7 +3,7 @@
 // Supported RV32 instructions:
 // beq, lw, sw, and, or, add, sub, addi, andi, ori
 
-module Controller (
+module Controller ( //center unit, first process the instruction
     input clk, rst,
     input [31:0] inst,
     input doBranch, EcallDone,
@@ -21,10 +21,10 @@ module Controller (
     assign RegWrite = (`i == 7'b0000011) || (`i ==? 7'b0x10011) || (`i ==? 7'b110x111) || (`i ==? 7'b0x10111);
     assign Ecall = (`i == 7'b1110011) || EcallWait;
 
-    always @(posedge clk)
+    always @(posedge clk) //branch process
         prevDoBranch <= doBranch;
 
-    always @(posedge clk)
+    always @(posedge clk) //'system call' process, wait for the previous system call to finish
         if (EcallDone || !rst || doBranch || prevDoBranch)
             EcallWait <= 1'b0;
         else if (`i == 7'b1110011)

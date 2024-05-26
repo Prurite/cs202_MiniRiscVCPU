@@ -1,7 +1,7 @@
 `timescale 1ns/1ps
 
 module Decoder(
-    input clk, rst,
+    input clk, rst, //remind that rst is usual at a high votage level
     input regWrite, EcallWrite,
     input [31:0] inst,
     input [4:0] rd_i, // Register to write in current cycle

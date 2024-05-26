@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
 
-module IOHandler (
+module IOHandler ( //process input from terminal and output to display module
 	input clk, rst, Ecall,
 	input [7:0] switches,
 	input button,

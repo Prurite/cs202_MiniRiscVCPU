@@ -1,31 +1,31 @@
 `timescale 1ns / 1ps
 
-module DigitalTube(
-    input clk, rst,
-    input [31:0] show_data, 
-    output reg [7:0] seg, seg1, an
+module DigitalTube( //tube controller
+    input clk, rst, //clock and reset, 100MHz
+    input [31:0] show_data, //data to display
+    output reg [7:0] seg, seg1, an //7-seg display, positive, negative, select signal
 );
     reg[18:0] divclk_cnt = 0;
     reg divclk = 0;
-    
     reg[3:0] disp_dat = 0;
     reg[2:0] disp_bit = 0;
-    parameter maxcnt = 50000;
+
+    parameter maxcnt = 50000; //100MHz -> 2KHz
     
-    always@(posedge clk) begin
+    always@(posedge clk)  //internal clock divider, 100MHz -> 2KHz
         if(divclk_cnt == maxcnt) begin
             divclk <= ~divclk;
             divclk_cnt <= 0;
         end else
             divclk_cnt <= divclk_cnt + 1'b1;
-    end
+    
 
-    always@(posedge divclk) begin
+    always@(posedge divclk) begin //set display data on each bit, use 16bits per digit, 7<-0 corresponding to right<-left
         if(!rst || disp_bit >= 7)
             disp_bit <= 0;
         else
             disp_bit <= disp_bit+1'b1;
-        case (disp_bit)
+        case (disp_bit) //can't be modified to bit shift and show_data[disp_bit*4+3:disp_bit*4], what a strange bug
             3'b000 :
             begin
                 disp_dat <= show_data[3:0];
@@ -73,7 +73,7 @@ module DigitalTube(
             end
         endcase
     end
-    always@(disp_dat) begin
+    always@(disp_dat) begin //set 7-seg display data, duplicate work
         if(an > 8'b00001000) begin
             case (disp_dat)
                 //0-F
