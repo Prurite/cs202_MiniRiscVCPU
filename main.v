@@ -1,9 +1,16 @@
 `timescale 1ns/1ps
 
 module main (
-    input clk, rst, Button,
-    input [7:0] Switches
+    input clk_hw, rst,
+    input Button,
+    input [7:0] Switches,
+    output [7:0] seg, seg1, an
 );
+    wire clk;
+    clk_wiz_0 uClkWiz(.reset(!rst), .clk_in1(clk_hw), .clk_out1(clk));
+
+    wire [31:0] SegData;
+
     wire [31:0] inst_if_o, pc_if_o;
 
     wire MemRead_if_o, MemtoReg_if_o, MemWrite_if_o, RegWrite_if_o, Ecall_if_o;
@@ -113,8 +120,9 @@ module main (
         .clk(clk), .rst(rst), .Ecall(Ecall_ex_i),
         .switches(Switches), .button(Button),
         .a0(rs1Data_ex_i), .a7(rs2Data_ex_i),
-        .EcallDone(EcallDone_ex_o), .EcallWrite(EcallWrite_ex_o), .EcallResult(EcallResult_ex_o),
-        .seg(), .seg_sel()
+        .EcallDone(EcallDone_ex_o), .EcallWrite(EcallWrite_ex_o),
+        .EcallResult(EcallResult_ex_o),
+        .SegData(SegData)
     );
 
     ALU uALU(
@@ -125,8 +133,6 @@ module main (
         .ALUSrc(ALUSrc_ex_i),
         .ALUResult(ALUResult_ex_o), .jmp(jmp_ex_o), .doBranch(doBranch_ex_o)
     );
-
-
 
     EXBuffer uEXBuffer(
         .clk(clk), .rst(rst),
@@ -145,4 +151,9 @@ module main (
         .DataOut(MemData_mem_o)
     );
 
+    DigitalTube uTube(
+        .clk(clk_hw), .rst(rst),
+        .show_data(SegData),
+        .seg(seg), .seg1(seg1), .an(an)
+    );
 endmodule

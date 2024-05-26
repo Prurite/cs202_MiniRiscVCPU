@@ -7,19 +7,14 @@ module IOHandler (
 	input [31:0] a0, a7,
 	output reg EcallDone, EcallWrite,
 	output reg [31:0] EcallResult,
-	output [7:0] seg [1:0],
-	output [3:0] seg_sel [1:0]
+	output reg [31:0] SegData
 );
-	reg [31:0] SegData;
 	reg slowPrevButton, fastPrevButton;
 	reg EcallWait;
 	wire clk_slow;
 	reg needWrite;
 
-	// Instantiate the 7-segment display module
-	// TODO
-
-	ClkDiv uClkDiv( .clk(clk), .rst(rst), .clk_o(clk_slow));
+	ClkDiv uClkDiv(.clk(clk), .rst(rst), .clk_o(clk_slow));
 
 	always @(posedge clk_slow)
 		slowPrevButton <= button;

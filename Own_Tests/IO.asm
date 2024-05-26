@@ -1,4 +1,5 @@
 .text    
+begin:
     li a7, 5
     ecall
     mv t1, a0
@@ -9,3 +10,4 @@
     ecall
     mv a0, t2
     ecall
+    j begin
