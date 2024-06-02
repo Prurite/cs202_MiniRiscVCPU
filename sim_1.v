@@ -11,7 +11,7 @@ module sim_1;
 
   // Instantiate the Unit Under Test (UUT)
   main umain (
-    .clk(clk),
+    .clk_hw(clk),
     .rst(rst)
   );
 

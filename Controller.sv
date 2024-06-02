@@ -21,11 +21,13 @@ module Controller ( //center unit, first process the instruction
     assign RegWrite = (`i == 7'b0000011) || (`i ==? 7'b0x10011) || (`i ==? 7'b110x111) || (`i ==? 7'b0x10111);
     assign Ecall = (`i == 7'b1110011) || EcallWait;
 
-    always @(posedge clk) //branch process
+    always @(posedge clk) 
         prevDoBranch <= doBranch;
 
-    always @(posedge clk) //'system call' process, wait for the previous system call to finish
-        if (EcallDone || !rst || doBranch || prevDoBranch) //play as stop
+    always @(posedge clk) 
+        if (EcallDone || !rst || doBranch || prevDoBranch) 
+            // If ecall is finished,
+            // or this ecall is branched off and should not be executed
             EcallWait <= 1'b0;
         else if (`i == 7'b1110011)
             EcallWait <= 1'b1;

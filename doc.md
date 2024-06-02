@@ -108,7 +108,7 @@ set_property PACKAGE_PIN P15 [get_ports rst]
 
 #### 其他常用IO接口
 
-```verilog
+```
 # IO proceed button
 
 set_property PACKAGE_PIN R11 [get_ports Button]
@@ -163,163 +163,84 @@ set_property PACKAGE_PIN K2 [get_ports InputWait]
 
 ### CPU 内部结构
 
-##### **接口和关系图**
+#### 接口和关系图
 
-![2ebaa03fffbc86eee64010d3791d4c82](assets/2ebaa03fffbc86eee64010d3791d4c82.jpg)
+![structure](./struct.png)
 
-##### **子模块设计说明**
+#### 子模块设计说明
 
-```verilog
-wire clk;
+**Buffers:** 用于各个层级流水线之间的缓冲。在时钟下降沿时触发，基本逻辑是把输入的值更新到输出上，也会根据控制信号特殊处理。
 
-wire [31:0] SegData;
+- **IFBuffer:** 如果 stall 信号为 1，则会将输出的值维持一个周期。如果 clear 信号为 1，则会将输出的值置为0。部分数据是由MEM传入的，这部分数据不受影响，无论如何都正常将输入赋值给输出。
+- **IDBuffer:** 如果 clear 信号为 1，则会将部分输出的值部分输出的值置为 0。其中 rs1Data_o 和 rs2Data_o 会根据 forwarding 信号从不同通路中选择数据。
 
-wire [31:0] inst_if_o, pc_if_o;
+**IFetch:** 根据控制信号和指令内存，实现正确的取指。
+- inputs:
+    - clk, rst: 统一时钟与复位信号（此后模块不再讲解这两个信号）
+    - stall: 由于 lw 产生 stall 则为 1，否则为 0
+    - doBranch: 分支预测错误则为 1，否则为 0
+    - jmp: 需要通过 jal 和 jalr 指令跳转则为 1，否则为 0
+    - ecall: 等待系统调用则为 1，否则为 0
+    - imm32: b 指令, jal 带来的立即数
+    - rs1: jalr 需要的寄存器值
+- outputs:
+    - pc: pc 寄存器的值
+    - inst: 当前取到的指令
 
-wire MemRead_if_o, MemtoReg_if_o, MemWrite_if_o, RegWrite_if_o, Ecall_if_o;
-wire [1:0] ALUSrc_if_o;
-wire [3:0] ALUOp_if_o;
+**Decoder:** 根据传入的数据和控制信号，将数据写在寄存器堆的正确位置，并且解码指令，将寄存器堆的数据正确读取并传出。
+- inputs:
+    - regWrite: 为 1 则需要向寄存器堆中写入数据
+    - EcallWrite: 为 1 则将 Ecall 传入的数据写入 a0
+    - inst: 需要执行的指令
+    - rd_i: 目前需要写入的指令的目标寄存器地址
+    - writeData: 需要写入寄存器堆的数据
+    - EcallResult: 外置输入传入的数据
+- outputs:
+    - rs1Data, rs2Data: 两个源寄存器中的数据
+    - rd_o: 传入的这条指令的目标寄存器
+    - imm32: 传入的这条指令解码出的立即数
 
-wire Memread_id_i, MemtoReg_id_i, MemWrite_id_i, RegWrite1_id_i, RegWrite2_id_i, Ecall_id_i;
-wire [1:0] ALUSrc_id_i;
-wire [3:0] ALUOp_id_i;
-wire [4:0] rd_id_i;
-wire [31:0] inst_id_i, pc_id_i, WriteData_id_i;
+**ALU:** 根据传入的数据和控制信号，完成计算和判断
+- inputs:
+    - ReadData1, ReadData2: 从寄存器堆或者 forwarding 通路中读入的数据
+    - pc: 传入的指令对应的 pc 值
+    - imm32: Decoder 中解码出的 32 位立即数
+    - ALUOp, funct3, funct7: ALU 模式的控制信号，其中的 ALUOp :
+        - 0: Register and register
+        - 1: Register and immediate
+        - 2: Load and store
+        - 3: Branch
+        - 4: jal (rd = PC + 4, pc += imm)
+        - 5: jalr (rd = PC + 4, pc = rs1 + imm)
+        - 6: Load immediate (rd = imm)
+    - ALUSrc: 低 bit 为 0 时，ALU 的输入 0 从寄存器中取数据，否则为 pc 的值；高 bit 为 0 时，ALU 的输入 1 从寄存器中取数据，否则为 imm32 的值
+- outputs:
+    - ALUResult: ALU 运算的结果
+    - jmp: 是否为 jalr 指令
+    - doBranch: 是否分支预测错误
 
-wire [31:0] rs1Data_id_o, rs2Data_id_o, imm32_id_o;
-wire [4:0] rd_id_o;
-wire fwd_ex_1_id_o, fwd_ex_2_id_o, fwd_mem_1_id_o, fwd_mem_2_id_o;
+**MEM:** 根据输入的控制信号，决定是从内存读取数据还是传出 ALU 的运算结果
 
-wire MemRead_ex_i, MemtoReg_ex_i, MemWrite_ex_i, RegWrite_ex_i, Ecall_ex_i;
-wire [1:0] ALUSrc_ex_i;
-wire [3:0] ALUOp_ex_i;
-wire [31:0] rs1Data_ex_i, rs2Data_ex_i, imm32_ex_i, pc_ex_i;
-wire [2:0] func3_ex_i;
-wire [6:0] func7_ex_i;
-wire [4:0] rd_ex_i;
+- inputs:
+    - MemRead: 是否需要读取内存
+    - MemWrite: 是否需要将 DataIn 写入内存
+    - MemtoReg: 为 1 则将内存中的数据传出，否则将 ALUResult 传出
+    - DataIn: 传入 MEM 的数据
+- outputs:
+    - DataOut: 最终传出的数据
 
-wire [31:0] ALUResult_ex_o, EcallResult_ex_o;
-wire jmp_ex_o, doBranch_ex_o, EcallWrite_ex_o, EcallDone_ex_o;
+**ClkDiv:** 时钟分频，从 45MHz 分频至 3000Hz
 
-wire MemRead_mem_i, MemtoReg_mem_i, MemWrite_mem_i, RegWrite_mem_i;
-wire [31:0] ALUResult_mem_i, MemData_mem_i;
-wire [4:0] rd_mem_i;
+**DigitialTube:** 把 32 位二进制数以 16 进制输出到数码管上
 
-wire [31:0] MemData_mem_o;
+**HazardDetector:** 根据当前执行的指令和前两条执行的指令，判断是否需要 stall 和 forwarding
 
-wire stall;
+- inputs:
+    - inst: 当前需要判断的指令
+- outputs:
+    - stall: 是否需要等待一个周期
+    - forwarding_...: 打开对应 forwarding 通路的控制信号
 
-clk_wiz_0 uClkWiz(.clk_in1(clk_hw), .clk_out1(clk));
-
-IFetch uIFetch(
-        .clk(clk), .rst(rst), .stall(stall), .ecall(Ecall_if_o),
-    .jmp(jmp_ex_o), .doBranch(doBranch_ex_o), // may have mistake when the clock is too fast(>50MHz)
-        .imm32(imm32_ex_i), .rs1(rs1Data_ex_i), //db and imm are prepared at pos and used at neg
-        .pc(pc_if_o),
-        .inst(inst_if_o)
-    );
-
-    Controller uController(
-        .clk(clk), .rst(rst),
-        .inst(inst_if_o),
-        .EcallDone(EcallDone_ex_o), .doBranch(doBranch_ex_o),
-        .MemRead(MemRead_if_o), .MemtoReg(MemtoReg_if_o), .MemWrite(MemWrite_if_o),
-        .RegWrite(RegWrite_if_o), .Ecall(Ecall_if_o),
-        .ALUSrc(ALUSrc_if_o),
-        .ALUOp(ALUOp_if_o)
-    );
-
-    IFBuffer uIFBuffer(
-        .clk(clk), .rst(rst), .stall(stall), .clear(doBranch_ex_o || EcallDone_ex_o),// branch or ecall need to clear the pipeline
-        .MemRead_i(MemRead_if_o), .MemtoReg_i(MemtoReg_if_o), .MemWrite_i(MemWrite_if_o),
-        .ALUSrc_i(ALUSrc_if_o), .RegWrite1_i(RegWrite_if_o), .RegWrite2_i(RegWrite_mem_i), .ALUOp_i(ALUOp_if_o),
-        .ecall_i(Ecall_if_o),
-        .pc_i(pc_if_o), .inst_i(inst_if_o), .rd_i(rd_mem_i), .WriteData_i(MemData_mem_o),
-        .MemRead_o(Memread_id_i), .MemtoReg_o(MemtoReg_id_i), .MemWrite_o(MemWrite_id_i),
-        .ALUSrc_o(ALUSrc_id_i), .RegWrite1_o(RegWrite1_id_i), .RegWrite2_o(RegWrite2_id_i), .ALUOp_o(ALUOp_id_i),
-        .ecall_o(Ecall_id_i),
-        .pc_o(pc_id_i), .inst_o(inst_id_i), .rd_o(rd_id_i), .WriteData_o(WriteData_id_i)
-    );
-
-    Decoder uDecoder(
-        .clk(clk), .rst(rst),
-        .regWrite(RegWrite2_id_i), .EcallWrite(EcallWrite_ex_o),
-        .inst(inst_id_i),
-        .rd_i(rd_id_i),
-        .writeData(WriteData_id_i), .EcallResult(EcallResult_ex_o),
-        .rs1Data(rs1Data_id_o), .rs2Data(rs2Data_id_o),
-        .rd_o(rd_id_o),
-        .imm32(imm32_id_o)
-    );
-
-    HazardDetector uHazardDetector(
-        .clk(clk), .rst(rst && ~doBranch_ex_o),
-        .inst(inst_id_i),
-        .stall(stall),
-        .forwarding_EX_EX1(fwd_ex_1_id_o), .forwarding_EX_EX2(fwd_ex_2_id_o),
-        .forwarding_MEM_EX1(fwd_mem_1_id_o), .forwarding_MEM_EX2(fwd_mem_2_id_o)
-    );
-
-    IDBuffer uIDBuffer(
-        .clk(clk), .rst(rst), .clear(stall || doBranch_ex_o || EcallDone_ex_o), //receive stall/doBranch/EcallDone, need to clear the pipeline
-        .fwd_ex_1(fwd_ex_1_id_o), .fwd_mem_1(fwd_mem_1_id_o),
-        .fwd_ex_2(fwd_ex_2_id_o), .fwd_mem_2(fwd_mem_2_id_o),
-        .fwd_ex_data(ALUResult_ex_o), .fwd_mem_data(MemData_mem_o),
-        .MemRead_i(Memread_id_i), .MemtoReg_i(MemtoReg_id_i), .MemWrite_i(MemWrite_id_i), .RegWrite_i(RegWrite1_id_i),
-        .ecall_i(Ecall_id_i),
-        .ALUSrc_i(ALUSrc_id_i), .ALUOp_i(ALUOp_id_i),
-        .rs1Data_i(rs1Data_id_o), .rs2Data_i(rs2Data_id_o), .imm32_i(imm32_id_o), .pc_i(pc_id_i), .inst(inst_id_i),
-        .rd_i(rd_id_o),
-        .MemRead_o(MemRead_ex_i), .MemtoReg_o(MemtoReg_ex_i), .MemWrite_o(MemWrite_ex_i), .RegWrite_o(RegWrite_ex_i),
-        .ecall_o(Ecall_ex_i),
-        .ALUSrc_o(ALUSrc_ex_i), .ALUOp_o(ALUOp_ex_i),
-        .rs1Data_o(rs1Data_ex_i), .rs2Data_o(rs2Data_ex_i), .imm32_o(imm32_ex_i), .pc_o(pc_ex_i),
-        .func3(func3_ex_i), .func7(func7_ex_i),
-        .rd_o(rd_ex_i)
-    );
-
-    IOHandler uIOHandler (
-        .clk(clk), .rst(rst), .Ecall(Ecall_ex_i),
-        .switches(Switches), .button(Button),
-        .a0(rs1Data_ex_i), .a7(rs2Data_ex_i),
-        .EcallDone(EcallDone_ex_o), .EcallWrite(EcallWrite_ex_o),
-        .EcallWait(EcallWait), .needWrite(InputWait),
-        .EcallResult(EcallResult_ex_o),
-        .SegData(SegData)
-    );
-
-    ALU uALU(
-        .ALUOp(ALUOp_ex_i),
-        .ReadData1(rs1Data_ex_i), .ReadData2(rs2Data_ex_i),
-        .pc(pc_ex_i), .imm32(imm32_ex_i),
-        .funct3(func3_ex_i), .funct7(func7_ex_i),
-        .ALUSrc(ALUSrc_ex_i),
-        .ALUResult(ALUResult_ex_o), .jmp(jmp_ex_o), .doBranch(doBranch_ex_o)
-    );
-
-    EXBuffer uEXBuffer(
-        .clk(clk), .rst(rst),
-        .MemRead_i(MemRead_ex_i), .MemtoReg_i(MemtoReg_ex_i), .MemWrite_i(MemWrite_ex_i), .RegWrite_i(RegWrite_ex_i),
-        .ALUResult_i(ALUResult_ex_o), .MemData_i(rs2Data_ex_i),
-        .rd_i(rd_ex_i),
-        .MemRead_o(MemRead_mem_i), .MemtoReg_o(MemtoReg_mem_i), .MemWrite_o(MemWrite_mem_i), .RegWrite_o(RegWrite_mem_i),
-        .ALUResult_o(ALUResult_mem_i), .MemData_o(MemData_mem_i),
-        .rd_o(rd_mem_i)
-    );
-
-    MEM uMEM(
-        .clk(clk), .rst(rst),
-        .MemRead(MemRead_mem_i), .MemWrite(MemWrite_mem_i), .MemtoReg(MemtoReg_mem_i),
-        .ALUResult(ALUResult_mem_i), .DataIn(MemData_mem_i),
-        .DataOut(MemData_mem_o)
-    );
-
-    DigitalTube uTube(
-        .clk(clk_hw), .rst(rst),
-        .show_data(SegData),
-        .seg(seg), .seg1(seg1), .an(an)
-    );
-```
 
 ## 系统上板使用说明
 
@@ -329,25 +250,42 @@ IFetch uIFetch(
 
 当代码使用 ecall 调用 IO 读入时，CPU 会进入等待用户输入状态，IO 等待及输入等待灯亮。用户通过拨码开关完成输入后，按下 IO 确定按钮，系统将读入的结果传入 a0 寄存器，程序继续执行。
 
+如需实现一次烧录 bitstream 运行多个测试用例，可在编写 asm 汇编文件时，编写一个读入用户输入的测试用例的编号，并跳转至对应测试代码；对应用例运行结束后，跳转回测试用例选择部分。
+
 ### 输出
 
 当代码使用 ecall 调用 IO 输出时，CPU 会将 a0 中的数据显示在数码管上，并进入等待用户确认输出状态，IO 等待灯亮。用户需要继续程序执行时，按下 IO 确定按钮，程序继续执行。
 
-## **自测试说明**
+## 自测试说明
 
+| 编号 | 测试用例名   | 测试方法 | 测试类型 | 描述                                   | 结果 | 结论                             |
+| ---- | ------------ | -------- | -------- | -------------------------------------- | ---- | -------------------------------- |
+| 1    | single_cycle | 仿真     | 集成     | 在插入 nop 条件下执行 add 指令         | 通过 | CPU 各基础模块实现无误           |
+| 2    | pipelined    | 仿真     | 集成     | 在不插入 nop 条件下连续执行 add 指令   | 通过 | CPU 各基础模块实现无误           |
+| 3    | stall        | 仿真     | 集成     | 测试 Data hazard                       | 通过 | CPU Harard detector 模块无误     |
+| 4    | branch       | 仿真     | 集成     | 测试 Branch 跳转                       | 通过 | CPU Branch 部分实现无误          |
+| 5    | fibloop      | 仿真     | 集成     | 用循环计算斐波那契数                   | 通过 | CPU 各模块基本实现无误           |
+| 6    | float        | 仿真     | 集成     | 用 RV32 指令对 16 位浮点数进行舍入操作 | 通过 | CPU 各模块基本实现无误           |
+| 7    | fibonacci    | 仿真     | 集成     | 用递归计算斐波那契数                   | 通过 | CPU 各模块基本实现无误           |
+| 8    | IO           | 仿真     | 集成     | 测试 ecall 及 IO 中断                  | 通过 | CPU Ecall 及中断处理部分实现无误 |
 
+各测试所用 asm 汇编代码见代码文件夹（Github repo）下 `Own_tests` 文件夹。
 
+## 问题及总结
 
+实际任务分配存在与前期规划不符的问题，应该加强任务分配上的沟通，减少任务冲突。对于已分配的任务，要时刻相互跟进落实情况，做好质量和进度控制。
 
-## **问题及总结**
-
- 实际任务分配存在与前期规划不符的问题，应该加强任务分配上的沟通，减少任务冲突。
-
- **Bonus**
+# Bonus 部分说明
 
 ## 基于RISC-V32I的ISA实现pipeline
 
-通过引入doBranch、stall信号，以及IFBuffer、IDBuffer、EXBuffer等模块，实现数据在模块间的存取以及涉及寄存器冲突时的异常处理；同时为了避免内存存取的冲突采用哈佛结构。
+Pipeline 的实现，需要将 CPU 的一条指令运行周期分为 Instruction Fetch (IF), Instruction Decode (ID), Execution (EX), Memory Access (MEM), Write back (WB) 五个部分。硬件上，切分为四个时序功能区及对应的缓冲区，每次时钟上边缘 posedge 时，各功能区执行对应操作；每次时钟下边缘 negedge 时，各缓冲区从上一功能区读取数据，并为下一功能区准备输入。
+
+各区的划分详见 “CPU 内部结构”中的接口与关系图。因 ID 与 WB 皆为寄存器操作，故此两阶段共用 IF/ID Buffer 缓冲区。
+
+为解决数据冲突 (Data Hazard)，各缓冲区间设置转发信号及通路，由 HazardDetector 模块根据当前指令，及之前两条指令决定对应通路的启用情况。各缓冲区根据 HazardDetector 模块的信号决定将何数据接入下一阶段。必要时，如 load-use hazard ，HazardDetector 会发出 stall 信号，锁定 IF/ID Buffer 的 IF 部分信号，并在本周期内清除 ID/EX Buffer 的信号，使下一条指令延缓 1 周期执行。
+
+为解决控制冲突 (Control Hazard) ，采用分支预测，预测分支总不会被执行而预载指令；ALU 采用组合逻辑在 ID 阶段结束，EX 阶段开始前 negedge 即产生 doBranch 信号，如产生分支跳转，此信号控制 IFetch 和各相关 buffer 重新加载指令及清理无效指令的数据。
 
 ### HazardDetector核心代码
 
@@ -361,24 +299,7 @@ module HazardDetector(
 	output reg forwarding_MEM_EX1,
 	output reg forwarding_MEM_EX2
 );
-    // define parameter
-    localparam J     = 7'b110x111;
-    localparam U     = 7'b0x10111;
-    localparam LOAD  = 7'b0000011;
-    localparam R     = 7'b0110011;
-    localparam I     = 7'b00x0011; 
-    localparam ECALL = 7'b1110011;
-
-    reg [31:0] preInst1, preInst2;
-
-`define op inst[6:0]
-`define pre1op preInst1[6:0]
-`define pre2op preInst2[6:0]
-`define rs1 (`op == 7'b1110011 ? 5'd10 : inst[19:15])
-`define rs2 (`op == 7'b1110011 ? 5'd17 : inst[24:20])
-`define rd inst[11:7]
-`define pre1rd preInst1[11:7]
-`define pre2rd preInst2[11:7]
+	// < Parameter and Local Variable Declarations Omitted >
 
     always @(negedge clk) begin
         if (~rst) begin
@@ -395,7 +316,7 @@ Stall: 连续两条指令，pre1 lw 的 rd 是 cur 的 rs1 / rs2
 EX-EX: 连续两条指令，pre1 不是 lw 的 rd 是 cur 的 rs1 / rs2
 MEM-EX：pre2 指令的 rd 是 cur 的 rs1 / rs2
 */
-
+    
 	wire pre1 = `pre1op == R || `pre1op ==? I || `pre1op ==? J || `pre1op ==? U;
 	wire pre2 = `pre2op == LOAD || `pre2op == R || `pre2op ==? I || `pre2op ==? J || `pre2op ==? U;
 
@@ -418,308 +339,43 @@ MEM-EX：pre2 指令的 rd 是 cur 的 rs1 / rs2
 endmodule
 ```
 
-### IFBuffer核心代码
+### 测试说明
+
+见“自测试说明”的测试用例 1-4 。
+
+### 问题及总结
+
+HazardDetector 不用写得过于复杂，只需保存前两条指令并时序处理即可。
+
+注意各模块间的时序关系，尤其是 ALU 的 branch 信号等时序与组合逻辑混合时，对转发通路和指令记录的影响，及数据传输发生在时钟的上升沿还是下降沿。
+
+## 实现 RISC-V32I ISA 中的 lui, aupic, ecall
+
+实现 lui 时，在 Decoder 中加入对 U-type opcode 的判断，直接由 immgen 输出已移位的立即数，后续处理时无需再考虑移位问题。
+
+auipc 对立即数的实现同 lui，并将 pc 寄存器接入 IF/ID buffer 及之后的 buffer，在 ALU 处加入对 rs1Data 来源的选择。
+
+实现 ecall 时，在 EX 阶段新增 IOHandler 模块处理 ecall 信号。此模块为状态机，有闲置，等待用户确认，完成三个状态，并通过 EcallDone, EcallWrite, EcallWait 信号与其他模块连接。当前指令为 ecall 指令时，由闲置转入等待用户确认状态，将 EcallWait 信号置 1 ，此信号以与 stall 信号类似的通路，使 IFetch，Controller，各 Buffer 等模块挂起等待。用户确认后，EcallWait 信号置 0 ，EcallDone 信号置 1 一个周期，使其他模块从挂起状态恢复，并设置 EcallWrite 信号，将结果写入寄存器。随后，所有信号清零，回到闲置状态。其他模块对应增加响应 EcallWait 和 EcallDone 信号的挂起及恢复。
+
+### 指令处理代码
+
+译码器，lui、auipc 相关
 
 ```verilog
-`timescale 1ns/1ps
-
-module IFBuffer( //buffer between IF and ID, use to implete pipeline
-  input clk, rst, stall, clear,
-  input MemRead_i, MemtoReg_i, MemWrite_i, RegWrite1_i, RegWrite2_i, ecall_i,
-  input [1:0] ALUSrc_i,
-  input [3:0] ALUOp_i, 
-  input [31:0] pc_i, inst_i,
-  input [4:0] rd_i,
-  input [31:0] WriteData_i,
-  output reg MemRead_o, MemtoReg_o, MemWrite_o, RegWrite1_o, RegWrite2_o, ecall_o,
-  output reg [1:0] ALUSrc_o,
-  output reg [3:0] ALUOp_o, 
-  output reg [31:0] pc_o, inst_o,
-  output reg [4:0] rd_o,
-  output reg [31:0] WriteData_o
-);
-  always @(negedge clk) begin
-    WriteData_o <= rst ? WriteData_i : 32'b0;
-    rd_o <= rst ? rd_i : 32'b0;
-    RegWrite2_o <= rst ? RegWrite2_i : 32'b0;
-
-    if (!rst || clear) begin
-      MemRead_o <= 1'b0;
-      MemtoReg_o <= 1'b0;
-      MemWrite_o <= 1'b0;
-      ALUSrc_o <= 2'b0;
-      ALUOp_o <= 4'b0;
-      RegWrite1_o <= 1'b0;
-      pc_o <= 32'b0;
-      inst_o <= 32'b0;
-      ecall_o <= 1'b0;
-    end else if (stall) begin
-      MemRead_o <= MemRead_o;
-      MemtoReg_o <= MemtoReg_o;
-      MemWrite_o <= MemWrite_o;
-      ALUSrc_o <= ALUSrc_o;
-      ALUOp_o <= ALUOp_o;
-      RegWrite1_o <= RegWrite1_o;
-      pc_o <= pc_o;
-      inst_o <= inst_o;
-      ecall_o <= ecall_o;
-    end else begin
-      MemRead_o <= MemRead_i;
-      MemtoReg_o <= MemtoReg_i;
-      MemWrite_o <= MemWrite_i;
-      ALUSrc_o <= ALUSrc_i;
-      ALUOp_o <= ALUOp_i;
-      RegWrite1_o <= RegWrite1_i;
-      pc_o <= pc_i;
-      inst_o <= inst_i;
-      ecall_o <= ecall_i;
-    end
-  end
-endmodule
-```
-
-
-
-### IDBuffer核心代码
-
-负责ID与EX间信号的传递
-
-```verilog
-`timescale 1ns/1ps
-
-module IDBuffer ( //buffer between ID and EX, use to implete pipeline
-  input clk, rst, clear,
-  input fwd_ex_1, fwd_mem_1, fwd_ex_2, fwd_mem_2,
-  input [31:0] fwd_ex_data, fwd_mem_data,
-  input MemRead_i, MemtoReg_i, MemWrite_i, RegWrite_i, ecall_i,
-  input [1:0] ALUSrc_i,
-  input [3:0] ALUOp_i,
-  input [31:0] rs1Data_i, rs2Data_i, imm32_i, pc_i, inst,
-  input [4:0] rd_i,
-  output reg MemRead_o, MemtoReg_o, MemWrite_o, RegWrite_o, ecall_o,
-  output reg [1:0] ALUSrc_o,
-  output reg [3:0] ALUOp_o,
-  output reg [31:0] rs1Data_o, rs2Data_o, imm32_o, pc_o,
-  output reg [2:0] func3,
-  output reg [6:0] func7,
-  output reg [4:0] rd_o
-);
-  assign neg_r = rst && !clear;
-
-  always @(negedge clk) begin //neg_r -> clear; else -> stall
-    MemRead_o <= neg_r ? MemRead_i : 1'b0;
-    MemtoReg_o <= neg_r ? MemtoReg_i : 1'b0;
-    MemWrite_o <= neg_r ? MemWrite_i : 1'b0;
-    RegWrite_o <= neg_r ? RegWrite_i : 1'b0;
-    ALUSrc_o <= neg_r ? ALUSrc_i : 2'b0;
-    ALUOp_o <= neg_r ? ALUOp_i : 4'b0;
-    imm32_o <= neg_r ? imm32_i : 32'b0;
-    pc_o <= neg_r ? pc_i : 32'b0;
-    func3 <= neg_r ? inst[14:12] : 3'b0;
-    func7 <= neg_r ? inst[31:25] : 7'b0;
-    rd_o <= neg_r ? rd_i : 5'b0;
-    ecall_o <= neg_r ? ecall_i : 1'b0;
-  end
-
-    always @(negedge clk) begin //reset or continue
-    if (!neg_r)
-      rs1Data_o <= 32'b0;
-    else if (fwd_ex_1)
-      rs1Data_o <= fwd_ex_data;
-    else if (fwd_mem_1)
-      rs1Data_o <= fwd_mem_data;
-    else
-      rs1Data_o <= rs1Data_i;
-    if (!neg_r)
-      rs2Data_o <= 32'b0;
-    else if (fwd_ex_2)
-      rs2Data_o <= fwd_ex_data;
-    else if (fwd_mem_2)
-      rs2Data_o <= fwd_mem_data;
-    else
-      rs2Data_o <= rs2Data_i;
-  end
-endmodule
-```
-
-### EXBuffer核心代码
-
-```verilog
-`timescale 1ns/1ps
-
-module EXBuffer( //buffer between EX and MEM, use to implete pipeline
-  input clk, rst,
-  input MemRead_i, MemtoReg_i, MemWrite_i, RegWrite_i,
-  input [31:0] ALUResult_i, MemData_i,
-  input [4:0] rd_i,
-  output reg MemRead_o, MemtoReg_o, MemWrite_o, RegWrite_o,
-  output reg [31:0] ALUResult_o, MemData_o,
-  output reg [4:0] rd_o
-);
-  always @(negedge clk) begin //clear or output
-    MemRead_o <= rst ? MemRead_i : 1'b0;
-    MemtoReg_o <= rst ? MemtoReg_i : 1'b0;
-    MemWrite_o <= rst ? MemWrite_i : 1'b0;
-    RegWrite_o <= rst ? RegWrite_i : 1'b0;
-    ALUResult_o <= rst ? ALUResult_i : 32'b0;
-    MemData_o <= rst ? MemData_i : 32'b0;
-    rd_o <= rst ? rd_i : 5'b0;
-  end
-endmodule 
-
-```
-
-### 测试场景：
-
-采用存在冲突的asm文件，利用波形图观察信号是否正确处理以及传递
-
-### 测试用例：
-
-##### 汇编代码：
-
-```assembly
-Case3_1:
-    li a1, 5
-    li a2, 2
-    sub a0, a1, a2
-
-Case3_2:
-    li a1, 5
-    sw a1, -4(sp)
-    lw a2, -4(sp)
-    addi a2, a2, 7
-    mv a0, a2
-
-Case3_3:
-    li t1, 17
-    li t2, 6
-    sub t3, t1, t2
-    and t4, t1, t3
-    xor a0, t3, t4
-```
-
-##### 仿真1：
-
-```verilog
-`timescale 1ns / 1ps
-
-module sim_1;
-
-
-  // Inputs
-  reg clk;
-  reg rst;
-  // Outputs
-
-
-  // Instantiate the Unit Under Test (UUT)
-  main umain (
-    .clk(clk),
-    .rst(rst)
-  );
-
-  // Initialize inputs
-  initial begin
-    clk = 1'b0;
-    rst = 1'b0;
-    #17 rst = ~rst;
-  end
-
-  // Stimulus
-  always begin
-    repeat(500) #5 clk = ~clk;
-    #10 $finish;
-
-  end
-
-
-
-
-  // Monitor
-
-endmodule
-```
-
-##### 仿真2：
-
-```verilog
-`timescale 1ns/1ps
-module sim_2;
-    reg clk;
-    reg rst;
-    reg [7:0] switches;
-    reg button;
-    main umain(.clk_hw(clk), .rst(rst), .Switches(switches), .Button(button));
-
-    initial begin
-        clk = 1'b0;
-        rst = 1'b0;
-        switches = 8'b0000_0010;
-        button = 1'b0;
-        #17 rst = ~rst;
-    end
-
-    always begin
-        repeat(500) #5 clk = ~clk;
-        #10 $finish;
-    end
-
-    always begin
-        #50 button = 1'b1;
-        #50 button = 1'b0;
-    end
-
-endmodule
-```
-
-
-
-### 测试结果：
-
-（需要hazard仿真图片）
-
-## 实现现有RISC-V32I 的ISA中的 lui，aupic，ecal l
-
-lui、auipc由硬件实现；
-
-ecall实现读取、输出功能，硬件由拨码开关输入具体数值，R11按钮确认输入，电子管显示a0存入的数值
-
-### 指令处理代码：
-
-译码器，lui、auipc相关
-
-```verilog
-//decoder and distribution
 always @(posedge clk)
-        casez(inst[6:0])
-            7'b00?0011: // I-type
-                imm32 <= {{20{inst[31]}}, inst[31:20]};
-            7'b1100111: // jalr
-                imm32 <= {{20{inst[31]}}, inst[31:20]};
-            7'b0100011: // S-type
-                imm32 <= {{20{inst[31]}}, inst[31:25], inst[11:7]};
-            7'b1100011: // B-type
-                imm32 <= {{19{inst[31]}}, inst[31], inst[7], inst[30:25], inst[11:8], 1'b0};
-            7'b0?10111: // U-type
-                imm32 <= {inst[31:12], 12'b0};
-            7'b1101111: // J-type
-                imm32 <= {{12{inst[31]}}, inst[31], inst[19:12], inst[20], inst[30:21], 1'b0};
-            default:
-                imm32 <= 32'b0;
-        endcase
-end
-
+    casez(inst[6:0])
+        // < Other Types Omitted >
+        7'b0?10111: // U-type
+            imm32 <= {inst[31:12], 12'b0};
+        default:
+            imm32 <= 32'b0;
+    endcase
 ```
 
 Controller，涉及信号分发
 
 ```verilog
-`timescale 1ns/1ps
-
-// Supported RV32 instructions:
-// beq, lw, sw, and, or, add, sub, addi, andi, ori
-
-module Controller ( //center unit, first process the instruction
+module Controller (
     input clk, rst,
     input [31:0] inst,
     input doBranch, EcallDone,
@@ -731,110 +387,30 @@ module Controller ( //center unit, first process the instruction
 
     reg EcallWait, prevDoBranch;
 
-    assign MemRead = (`i == 7'b0000011);
-    assign MemtoReg = (`i == 7'b0000011);
-    assign MemWrite = (`i == 7'b0100011);
-    assign RegWrite = (`i == 7'b0000011) || (`i ==? 7'b0x10011) || (`i ==? 7'b110x111) || (`i ==? 7'b0x10111);
+    // < Other Signals Omitted >
+    
     assign Ecall = (`i == 7'b1110011) || EcallWait;
+    // Ecall signal marks whether it's an ecall stall
 
-    always @(posedge clk) //branch process
+    always @(posedge clk)
         prevDoBranch <= doBranch;
 
-    always @(posedge clk) //'system call' process, wait for the previous system call to finish
-        if (EcallDone || !rst || doBranch || prevDoBranch) //play as stop
+    always @(posedge clk)
+        if (EcallDone || !rst || doBranch || prevDoBranch)
+            // If ecall is finished,
+            // or this ecall is branched off and should not be executed
             EcallWait <= 1'b0;
         else if (`i == 7'b1110011)
             EcallWait <= 1'b1;
         else
             EcallWait <= EcallWait;
-
-    // ALUSrc[0]: 0 reg 1 pc
-    assign ALUSrc[0] = (`i ==? 7'b110x111 || `i == 7'b0010111);
-    // ALUSrc[1]: 0 reg 1 imm32
-    assign ALUSrc[1] = (`i ==? 7'b00x0011) || (`i == 7'b0100011) || (`i ==? 7'b0x10111);
-
-    // ALUOp: see README
-    always @(*) begin
-        casez(`i)
-            7'b0110011: ALUOp = 4'd0;
-            7'b0010011: ALUOp = 4'd1;
-            7'b0?00011: ALUOp = 4'd2;
-            7'b1100011: ALUOp = 4'd3;
-            7'b1101111: ALUOp = 4'd4;
-            7'b1100111: ALUOp = 4'd5;
-            7'b0110111: ALUOp = 4'd6;
-            7'b0010111: ALUOp = 4'd1;
-            default: ALUOp = 4'd0;
-        endcase
-    end
 endmodule
 ```
 
-ALU，涉及移位以及高位运算
+IOHandler，ecall 相关
 
 ```verilog
-`timescale 1ns/1ps
-
-module ALU ( //port and relation reference from text book
-    input [31:0] ReadData1, ReadData2, pc, imm32,
-    input [3:0] ALUOp,
-    input [2:0] funct3,
-    input [6:0] funct7,
-    input [1:0] ALUSrc,
-    output reg [31:0] ALUResult,
-    output jmp, doBranch //process by harzard, doBranch play as stop, when it is active, the popeline will stop and clear error code caused by the branch
-);
-    wire [31:0] A, B;
-    assign A = ALUSrc[0] ? pc : ReadData1;
-    assign B = ALUSrc[1] ? imm32 : ReadData2;
-    always @(*) begin
-        casez(ALUOp)
-            4'b000?: // Register and register
-                case(funct3)
-                    3'h0: ALUResult = ((ALUOp == 4'b0 && funct7 == 7'h20) ? A - B : A + B); // add, sub
-                    3'h4: ALUResult = A ^ B; // xor
-                    3'h6: ALUResult = A | B; // or
-                    3'h7: ALUResult = A & B; // and
-                    3'h1: ALUResult = A << B[4:0]; // sll
-                    3'h5: ALUResult = ((funct7 == 7'h20) ? A >>> B[4:0] : A >> B[4:0]); //srl, sra
-                    3'h2: ALUResult = $signed(A) < $signed(B) ? 1 : 0; // slt
-                    3'h3: ALUResult = A < B ? 1 : 0; // sltu
-                    default: ALUResult = 0;
-                endcase
-            4'd2: // Load and store
-                ALUResult = A + B;
-            4'd4:
-                ALUResult = A + 4;
-            4'd5:
-                ALUResult = A + 4;
-            4'd6:
-                ALUResult = B;
-            default:
-                ALUResult = 32'b0;
-        endcase
-    end
-
-    assign jmp = ALUOp == 4'd5;
-
-    assign doBranch = jmp || ALUOp == 4'd4 || (ALUOp == 4'd3) && (
-        (funct3 == 3'h0 && ReadData1 == ReadData2) ||  // beq
-        (funct3 == 3'h1 && ReadData1 != ReadData2) ||  // bne
-        (funct3 == 3'h4 && $signed(ReadData1 - ReadData2) < 0) ||  // blt
-        (funct3 == 3'h5 && $signed(ReadData1 - ReadData2) >= 0) ||  // bge
-        (funct3 == 3'h6 && ReadData1 < ReadData2) ||  // bltu
-        (funct3 == 3'h7 && ReadData1 >= ReadData2)  // bgeu
-    );
-endmodule
-```
-
-
-
-IOHandler，ecall相关
-
-```verilog
-`timescale 1ns/1ps
-
-module IOHandler ( //process input from terminal and output to display module
+module IOHandler ( // Handle IO and ecalls
 	input clk, rst, Ecall,
 	input [7:0] switches,
 	input button,
@@ -848,29 +424,29 @@ module IOHandler ( //process input from terminal and output to display module
 
 	ClkDiv uClkDiv(.clk(clk), .rst(rst), .clk_o(clk_slow));
 
-	always @(posedge clk_slow) //use slow clock to debounce button
+    always @(posedge clk_slow) // Use slow clock to debounce button
 		slowPrevButton <= button;
 
-	always @(posedge clk) //detect the change of button
+    always @(posedge clk) // Detect the change of button
 		fastPrevButton <= slowPrevButton;
 
-	always @(posedge clk) begin //ecalldone, ecallwrite, ecallwait, denote the state of system call
-		if (!rst) begin
+    always @(posedge clk) begin // State machine
+        if (!rst) begin // Reset
 			{ EcallWait, EcallDone, EcallWrite, needWrite } <= 4'b0;
 			SegData <= 32'b0;
-		end
-		else if (EcallDone)
+        end else if (EcallDone) // Current ecall finished; to idle
 			{ EcallWrite, EcallDone } <= 1'b0;
-		else if (Ecall && !EcallWait) begin
+        else if (Ecall && !EcallWait) begin // A new ecall coming in; to wait
 			EcallWait <= 1'b1;
-			SegData <= a7 == 32'd1 ? a0 : 32'd0; // output
-			needWrite <= a7 == 32'd5;
-		end else if (EcallWait && !fastPrevButton && slowPrevButton) begin
+            SegData <= a7 == 32'd1 ? a0 : 32'd0; // Send data to output
+			needWrite <= a7 == 32'd5; // Remember if it's a read and needs to write reg
+        end else if (EcallWait && !fastPrevButton && slowPrevButton) begin
+            // Button pressed; to done
 			EcallWait <= 1'b0;
 			EcallDone <= 1'b1;
 			EcallWrite <= needWrite;
 			EcallResult <= needWrite ? {24'b0, switches} : 32'd0; // input
-		end else begin
+		end else begin // Stay current state
 			EcallWait <= EcallWait;
 			EcallDone <= EcallDone;
 			EcallWrite <= EcallWrite;
@@ -881,9 +457,6 @@ module IOHandler ( //process input from terminal and output to display module
 endmodule
 ```
 
+### 测试说明
 
-
-
-
-# 特别鸣谢
-
+见“自测试说明”的测试用例 8 。
