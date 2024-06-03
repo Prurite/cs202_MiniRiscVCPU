@@ -4,7 +4,7 @@ A 5-cycle pipelined CPU designed for EGO1 board `xc7a35tcsg324-1`, as a course p
 
 ## The Structure Diagram
 
-![struct](struct.jpg)
+![struct](struct.png)
 
 ## Setting up project
 
