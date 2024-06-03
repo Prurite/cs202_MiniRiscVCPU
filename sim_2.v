@@ -1,9 +1,10 @@
 `timescale 1ns/1ps
+
 module sim_2;
-    reg clk;
-    reg rst;
+    reg clk, rst;
     reg [7:0] switches;
     reg button;
+
     main umain(.clk_hw(clk), .rst(rst), .Switches(switches), .Button(button));
 
     initial begin

@@ -1,37 +1,19 @@
 `timescale 1ns / 1ps
 
 module sim_1;
+    reg clk, rst;
 
+    main umain ( .clk_hw(clk), .rst(rst));
 
-  // Inputs
-  reg clk;
-  reg rst;
-  // Outputs
+    initial begin
+        clk = 1'b0;
+        rst = 1'b0;
+        #17 rst = ~rst;
+    end
 
-
-  // Instantiate the Unit Under Test (UUT)
-  main umain (
-    .clk_hw(clk),
-    .rst(rst)
-  );
-
-  // Initialize inputs
-  initial begin
-    clk = 1'b0;
-    rst = 1'b0;
-    #17 rst = ~rst;
-  end
-
-  // Stimulus
-  always begin
-    repeat(500) #5 clk = ~clk;
-    #10 $finish;
-
-  end
-
-
-
-
-  // Monitor
+    always begin
+        repeat(500) #5 clk = ~clk;
+        #10 $finish;
+    end
 
 endmodule

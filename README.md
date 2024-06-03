@@ -1,13 +1,38 @@
-# cs202_MiniRiscVCPU
+# CS202_Mini RiscV CPU
+
+A 5-cycle pipelined CPU designed for EGO1 board `xc7a35tcsg324-1`, as a course project for CS202 Computer Organizations in SUSTech. Refer to the `doc.md` file for detailed documentation.
 
 ## The Structure Diagram
 
 ![struct](struct.jpg)
 
-## Settings of IPcore
+## Setting up project
+
+The project is managed using Vivado 2017.4. To set up, clone the repo, create a new project in vivado, and add design sources, simulation sources, constraints, and optionally coefficient file for the instruction memory. Configure the ipcores as the follows.
+
+## Usage
+
+Init the instruction memory with your program coe file, generate bitstream and write to the EGO1 FPGA board. Details are in the `doc.md` file.
+
+## Settings of IPCores
+
+### Clocking
+
+Name in IP Catalog: Clocking Wizard
+
+Component Name: `clk_wiz_0`
+
+#### Output Clocks
+
+- clk_out1: 45.000 MHz
+- Optional inputs/outputs: all disabled.
 
 ### Instruction Memory
-Component Name: prgrom
+
+Name in IP Catalog: Block Memory Generator
+
+Component Name: `prgrom` 
+
 #### **Basic**
 * Memory type: Single Port ROM
 
@@ -16,12 +41,15 @@ Component Name: prgrom
 * Port A Width: 32
 * Port A Depth: 16384
 * Enable Port Type: Always Enabled
-* Primitives Output Register:<font color = red> No</font>
+* Primitives Output Register: No
 #### **Other Options**
 * Load Init File: Load your instruction coe file.
 
 ### Data Memory
-Component Name: data_mem
+
+Name in IP Catalog: Block Memory Generator
+
+Component Name: `data_mem`
 #### **Basic**
 * Memory type: Single Port RAM
 #### **Port A Options**
@@ -30,7 +58,7 @@ Component Name: data_mem
 * Write Depth: 16384
 * Read Depth: 16384
 * Enable Port Type: Always Enabled
-* Primitives Output Register:<font color = red> No</font>
+* Primitives Output Register: No
 #### **Other Options**
 * Load Init File: No
 
